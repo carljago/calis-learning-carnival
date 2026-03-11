@@ -249,6 +249,7 @@
 
         updateUsedState(word);
         GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup([document.getElementById('hear-btn')], { id: 'actions' });
         GamepadManager.registerFocusGroup(bank.querySelectorAll('.letter-tile'), { id: 'bank', columns: Math.min(letters.length, 8) });
       }
 
