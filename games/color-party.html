@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Party - Cali's Learning Carnival</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/games.css">
+  <link rel="stylesheet" href="../css/xbox.css">
+</head>
+<body>
+  <div id="star-counter-container"></div>
+  <div class="game-container" id="game" style="background: linear-gradient(135deg, #FFF0F5, #F0F8FF, #F5FFFA, #FFFFF0);">
+    <div class="intro-screen" id="intro">
+      <div class="game-emoji">&#x1F308;</div>
+      <h1>Color Party!</h1>
+      <p>Colors, counting &amp; fun!</p>
+      <button class="btn btn-green" id="start-btn" style="font-size:28px;padding:20px 60px;">Start!</button>
+    </div>
+
+    <div class="game-area hidden" id="game-area">
+      <div class="question-counter" id="counter">Activity 1 of 10</div>
+      <div class="progress-bar-container"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <div id="instruction" style="text-align:center;font-family:'Fredoka One';font-size:clamp(24px,4vw,40px);margin:10px 0;"></div>
+      <div id="activity-area" style="display:flex;flex-direction:column;align-items:center;gap:20px;"></div>
+      <div id="feedback" style="text-align:center;min-height:40px;margin:10px 0;"></div>
+      <div id="options-area" style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center;"></div>
+      <div id="submit-area" style="text-align:center;margin:10px 0;"></div>
+    </div>
+
+    <div class="hidden" id="end-area" style="width:100%;"></div>
+  </div>
+
+  <div id="button-guide">
+    <span class="guide-btn"><span class="xbox-a">A</span>/Enter: Select</span>
+    <span class="guide-btn">Arrows: Navigate</span>
+  </div>
+  <div class="game-nav">
+    <button class="nav-btn exit-btn" id="exit-btn"><span class="nav-key">Q</span> Exit</button>
+    <button class="nav-btn skip-btn" id="skip-nav-btn"><span class="nav-key">N</span> Skip</button>
+    <button class="nav-btn settings-btn" id="settings-nav-btn"><span class="nav-key">S</span> Settings</button>
+  </div>
+
+  <script src="../js/words.js"></script>
+  <script src="../js/math.js"></script>
+  <script src="../js/gamepad.js"></script>
+  <script src="../js/progress.js"></script>
+  <script src="../js/rewards.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      ProgressTracker.load();
+      RewardSystem.init();
+      AudioManager.init();
+      GamepadManager.init();
+      RewardSystem.renderStarCounter(document.getElementById('star-counter-container'));
+
+      const settings = CarnivalUtils.getSettings();
+      const gameLength = settings.gameLength || 10;
+
+      const colors = {
+        red: '#FF6B6B', blue: '#4D96FF', yellow: '#FFD93D',
+        green: '#6BCB77', orange: '#FFA06B', purple: '#9B59B6'
+      };
+      const colorNames = Object.keys(colors);
+
+      // Activity generators
+      const activities = [];
+      const types = ['crayon', 'count', 'match', 'word'];
+
+      // Build activities
+      for (let i = 0; i < gameLength; i++) {
+        activities.push(types[i % types.length]);
+      }
+
+      let currentIdx = 0;
+      let sessionCorrect = 0;
+      let wrongAttempt = false;
+
+      const game = document.getElementById('game');
+      const gameArea = document.getElementById('game-area');
+      const endArea = document.getElementById('end-area');
+      const instruction = document.getElementById('instruction');
+      const activityArea = document.getElementById('activity-area');
+      const optionsArea = document.getElementById('options-area');
+      const feedbackEl = document.getElementById('feedback');
+      const submitArea = document.getElementById('submit-area');
+
+      GamepadManager.registerFocusGroup([document.getElementById('start-btn')], { id: 'intro' });
+      document.getElementById('start-btn').addEventListener('click', () => {
+        AudioManager.resume();
+        document.getElementById('intro').classList.add('hidden');
+        gameArea.classList.remove('hidden');
+        showActivity();
+      });
+
+      function showActivity() {
+        if (currentIdx >= activities.length) return showEnd();
+        const type = activities[currentIdx];
+        document.getElementById('counter').textContent = `Activity ${currentIdx + 1} of ${activities.length}`;
+        document.getElementById('progress-fill').style.width = `${(currentIdx / activities.length) * 100}%`;
+        feedbackEl.innerHTML = '';
+        submitArea.innerHTML = '';
+        activityArea.innerHTML = '';
+        optionsArea.innerHTML = '';
+        wrongAttempt = false;
+
+        switch (type) {
+          case 'crayon': showCrayon(); break;
+          case 'count': showCount(); break;
+          case 'match': showMatch(); break;
+          case 'word': showColorWord(); break;
+        }
+      }
+
+      function showCrayon() {
+        const target = colorNames[Math.floor(Math.random() * colorNames.length)];
+        instruction.innerHTML = `Color the crayon <span style="text-transform:uppercase;font-weight:bold;">${target}</span>!`;
+
+        activityArea.innerHTML = `
+          <div class="crayon" id="crayon-shape" style="width:80px;height:220px;border-radius:10px 10px 50% 50%;border:3px solid #999;background:#f5f5f5;margin:10px auto;position:relative;">
+            <div style="position:absolute;top:-25px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:25px solid transparent;border-right:25px solid transparent;border-bottom:25px solid #f5f5f5;" id="crayon-tip"></div>
+          </div>
+        `;
+
+        optionsArea.innerHTML = '';
+        colorNames.forEach(c => {
+          const swatch = document.createElement('button');
+          swatch.className = 'color-swatch';
+          swatch.style.background = colors[c];
+          swatch.setAttribute('aria-label', c);
+          swatch.addEventListener('click', () => {
+            if (c === target) {
+              document.getElementById('crayon-shape').style.background = colors[c];
+              document.getElementById('crayon-shape').style.borderColor = 'rgba(0,0,0,0.3)';
+              document.getElementById('crayon-tip').style.borderBottomColor = colors[c];
+              sessionCorrect++;
+              AudioManager.play('correct');
+              if (!wrongAttempt) {
+                RewardSystem.addStar();
+                RewardSystem.animateStarEarned(game);
+              }
+              CarnivalUtils.showEncouragement(game, CarnivalUtils.randomEncouragement());
+              setTimeout(() => { currentIdx++; showActivity(); }, 1200);
+            } else {
+              wrongAttempt = true;
+              feedbackEl.innerHTML = `<span style="color:var(--red);font-family:'Fredoka One';">That's ${c}! Try again!</span>`;
+              AudioManager.play('incorrect');
+              swatch.style.animation = 'shake 0.4s ease';
+              setTimeout(() => { swatch.style.animation = ''; feedbackEl.innerHTML = ''; }, 800);
+            }
+          });
+          optionsArea.appendChild(swatch);
+        });
+
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(optionsArea.querySelectorAll('.color-swatch'), { id: 'swatches' });
+      }
+
+      function showCount() {
+        const emojis = ['&#x2B50;', '&#x2764;&#xFE0F;', '&#x1F388;', '&#x1F33B;', '&#x1F98B;', '&#x1F34E;', '&#x1F36A;', '&#x1F41F;', '&#x26BD;', '&#x1F431;', '&#x1F436;', '&#x1F514;', '&#x1F525;', '&#x1F30D;'];
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        const count = Math.floor(Math.random() * 5) + 3; // 3-7
+        instruction.textContent = 'How many do you see?';
+
+        let objHtml = '<div class="counting-objects">';
+        for (let i = 0; i < count; i++) objHtml += `<span>${emoji}</span>`;
+        objHtml += '</div>';
+        activityArea.innerHTML = objHtml;
+
+        // Answer choices
+        const choices = CarnivalUtils.shuffleArray([count, count - 1, count + 1, count + 2]).slice(0, 4);
+        if (!choices.includes(count)) choices[0] = count;
+        optionsArea.innerHTML = '';
+        CarnivalUtils.shuffleArray(choices).forEach(n => {
+          const btn = document.createElement('button');
+          btn.className = 'answer-choice';
+          btn.textContent = n;
+          btn.addEventListener('click', () => {
+            if (n === count) {
+              sessionCorrect++;
+              btn.classList.add('correct');
+              AudioManager.play('correct');
+              if (!wrongAttempt) {
+                RewardSystem.addStar();
+                RewardSystem.animateStarEarned(game);
+              }
+              CarnivalUtils.showEncouragement(game, `Yes! There are ${count}!`);
+              setTimeout(() => { currentIdx++; showActivity(); }, 1200);
+            } else {
+              wrongAttempt = true;
+              btn.classList.add('wrong');
+              AudioManager.play('incorrect');
+              feedbackEl.innerHTML = '<span style="color:var(--red);font-family:Fredoka One;">Not quite! Count again!</span>';
+              setTimeout(() => { btn.classList.remove('wrong'); feedbackEl.innerHTML = ''; }, 800);
+            }
+          });
+          optionsArea.appendChild(btn);
+        });
+
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(optionsArea.querySelectorAll('.answer-choice'), { id: 'count-choices' });
+      }
+
+      function showMatch() {
+        const objects = [
+          { emoji: '&#x2600;&#xFE0F;', name: 'sun', color: 'yellow' },
+          { emoji: '&#x1F34E;', name: 'apple', color: 'red' },
+          { emoji: '&#x1F438;', name: 'frog', color: 'green' },
+          { emoji: '&#x1F30A;', name: 'water', color: 'blue' },
+          { emoji: '&#x1F955;', name: 'carrot', color: 'orange' },
+          { emoji: '&#x1F347;', name: 'grapes', color: 'purple' },
+          { emoji: '&#x1F34C;', name: 'banana', color: 'yellow' },
+          { emoji: '&#x1F352;', name: 'cherry', color: 'red' },
+          { emoji: '&#x1F966;', name: 'broccoli', color: 'green' },
+          { emoji: '&#x1F4D8;', name: 'book', color: 'blue' },
+          { emoji: '&#x1F383;', name: 'pumpkin', color: 'orange' },
+          { emoji: '&#x1F346;', name: 'eggplant', color: 'purple' },
+          { emoji: '&#x1F353;', name: 'strawberry', color: 'red' },
+          { emoji: '&#x1F34A;', name: 'orange', color: 'orange' },
+          { emoji: '&#x1F333;', name: 'tree', color: 'green' },
+          { emoji: '&#x1F31F;', name: 'star', color: 'yellow' },
+          { emoji: '&#x1F40B;', name: 'whale', color: 'blue' },
+          { emoji: '&#x1F338;', name: 'flower', color: 'purple' },
+        ];
+        const obj = objects[Math.floor(Math.random() * objects.length)];
+        instruction.innerHTML = `Which color matches the ${obj.name}?`;
+        activityArea.innerHTML = `<div style="font-size:100px;">${obj.emoji}</div>`;
+
+        // 3 choices: correct + 2 wrong
+        const wrong = colorNames.filter(c => c !== obj.color);
+        const choices = CarnivalUtils.shuffleArray([obj.color, ...CarnivalUtils.shuffleArray(wrong).slice(0, 2)]);
+
+        optionsArea.innerHTML = '';
+        choices.forEach(c => {
+          const btn = document.createElement('button');
+          btn.className = 'answer-choice';
+          btn.textContent = c;
+          btn.addEventListener('click', () => {
+            if (c === obj.color) {
+              sessionCorrect++;
+              btn.classList.add('correct');
+              AudioManager.play('correct');
+              if (!wrongAttempt) {
+                RewardSystem.addStar();
+                RewardSystem.animateStarEarned(game);
+              }
+              CarnivalUtils.showEncouragement(game, `Yes! The ${obj.name} is ${obj.color}!`);
+              setTimeout(() => { currentIdx++; showActivity(); }, 1200);
+            } else {
+              wrongAttempt = true;
+              AudioManager.play('incorrect');
+              btn.classList.add('wrong');
+              feedbackEl.innerHTML = `<span style="color:var(--red);font-family:'Fredoka One';">That's ${c}! Try again!</span>`;
+              setTimeout(() => { btn.classList.remove('wrong'); feedbackEl.innerHTML = ''; }, 800);
+            }
+          });
+          optionsArea.appendChild(btn);
+        });
+
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(optionsArea.querySelectorAll('.answer-choice'), { id: 'match-choices' });
+      }
+
+      function showColorWord() {
+        const target = colorNames[Math.floor(Math.random() * colorNames.length)];
+        instruction.textContent = `Click the ${target} one!`;
+        activityArea.innerHTML = `<div style="font-family:'Fredoka One';font-size:clamp(48px,8vw,80px);color:#2C3E50;">${target}</div>`;
+
+        const wrong = colorNames.filter(c => c !== target);
+        const choices = CarnivalUtils.shuffleArray([target, ...CarnivalUtils.shuffleArray(wrong).slice(0, 2)]);
+
+        optionsArea.innerHTML = '';
+        choices.forEach(c => {
+          const swatch = document.createElement('button');
+          swatch.className = 'color-swatch';
+          swatch.style.background = colors[c];
+          swatch.setAttribute('aria-label', c);
+          swatch.addEventListener('click', () => {
+            if (c === target) {
+              sessionCorrect++;
+              AudioManager.play('correct');
+              if (!wrongAttempt) {
+                RewardSystem.addStar();
+                RewardSystem.animateStarEarned(game);
+              }
+              CarnivalUtils.showEncouragement(game, CarnivalUtils.randomEncouragement());
+              setTimeout(() => { currentIdx++; showActivity(); }, 1200);
+            } else {
+              wrongAttempt = true;
+              AudioManager.play('incorrect');
+              feedbackEl.innerHTML = `<span style="color:var(--red);font-family:'Fredoka One';">That's ${c}! Try again!</span>`;
+              setTimeout(() => feedbackEl.innerHTML = '', 800);
+            }
+          });
+          optionsArea.appendChild(swatch);
+        });
+
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(optionsArea.querySelectorAll('.color-swatch'), { id: 'word-choices' });
+      }
+
+      function showEnd() {
+        gameArea.classList.add('hidden');
+        endArea.classList.remove('hidden');
+        CarnivalUtils.showEndScreen(endArea, {
+          stars: RewardSystem.getSessionSummary().stars,
+          mms: RewardSystem.getSessionSummary().mms,
+          wordsCorrect: sessionCorrect,
+          totalQuestions: activities.length
+        });
+      }
+
+      // Exit, Skip, Settings
+      function skipCurrent() { currentIdx++; showActivity(); }
+      document.getElementById('exit-btn').addEventListener('click', () => location.href = '../index.html');
+      document.getElementById('skip-nav-btn').addEventListener('click', skipCurrent);
+      document.getElementById('settings-nav-btn').addEventListener('click', () => location.href = '../index.html');
+      GamepadManager.on('exit_game', () => location.href = '../index.html');
+      GamepadManager.on('skip_question', skipCurrent);
+      GamepadManager.on('b_press', () => { location.href = '../index.html'; });
+      document.addEventListener('click', () => AudioManager.resume(), { once: true });
+    });
+  </script>
+</body>
+</html>

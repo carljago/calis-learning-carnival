@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Rocket - Cali's Learning Carnival</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/games.css">
+  <link rel="stylesheet" href="../css/xbox.css">
+</head>
+<body>
+  <div id="star-counter-container"></div>
+  <div id="session-timer" class="hidden"></div>
+  <div class="game-container starfield" id="game">
+    <!-- Intro -->
+    <div class="intro-screen" id="intro">
+      <div class="game-emoji">&#x1F680;</div>
+      <h1>Word Rocket!</h1>
+      <p>Read the words to blast off!</p>
+      <button class="btn btn-green" id="start-btn" style="font-size:28px;padding:20px 60px;">Start!</button>
+    </div>
+    <!-- Game Area -->
+    <div class="game-area hidden" id="game-area">
+      <div class="question-counter" id="counter">Word 1 of 10</div>
+      <div class="progress-bar-container"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="rocket-emoji" id="rocket">&#x1F680;</div>
+      <div class="word-display" id="word-display"></div>
+      <div id="action-area"></div>
+    </div>
+    <!-- End Screen -->
+    <div class="hidden" id="end-area" style="width:100%;"></div>
+  </div>
+  <div id="button-guide">
+    <span class="guide-btn"><span class="xbox-a">A</span>/Enter: Select</span>
+    <span class="guide-btn"><span class="xbox-b">B</span>/Esc: Back</span>
+    <span class="guide-btn"><span class="xbox-x">X</span>/Space: Help</span>
+    <span class="guide-btn">Arrows: Navigate</span>
+  </div>
+  <div class="game-nav">
+    <button class="nav-btn exit-btn" id="exit-btn"><span class="nav-key">Q</span> Exit</button>
+    <button class="nav-btn skip-btn" id="skip-nav-btn"><span class="nav-key">N</span> Skip</button>
+    <button class="nav-btn settings-btn" id="settings-nav-btn"><span class="nav-key">S</span> Settings</button>
+  </div>
+
+  <script src="../js/words.js"></script>
+  <script src="../js/math.js"></script>
+  <script src="../js/gamepad.js"></script>
+  <script src="../js/progress.js"></script>
+  <script src="../js/rewards.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      ProgressTracker.load();
+      RewardSystem.init();
+      AudioManager.init();
+      GamepadManager.init();
+      RewardSystem.renderStarCounter(document.getElementById('star-counter-container'));
+
+      const settings = CarnivalUtils.getSettings();
+      const gameLength = settings.gameLength || 10;
+      let words = WordLibrary.getSessionWords(settings.difficulty || 'easy', gameLength);
+      let currentIdx = 0;
+      let sessionCorrect = 0;
+      let currentWord = null;
+      let helpUsed = false;
+
+      const game = document.getElementById('game');
+      const intro = document.getElementById('intro');
+      const gameArea = document.getElementById('game-area');
+      const endArea = document.getElementById('end-area');
+      const wordDisplay = document.getElementById('word-display');
+      const actionArea = document.getElementById('action-area');
+      const counter = document.getElementById('counter');
+      const progressFill = document.getElementById('progress-fill');
+
+      // Intro
+      GamepadManager.registerFocusGroup([document.getElementById('start-btn')], { id: 'intro' });
+
+      document.getElementById('start-btn').addEventListener('click', () => {
+        AudioManager.resume();
+        AudioManager.play('buttonPress');
+        intro.classList.add('hidden');
+        gameArea.classList.remove('hidden');
+        showWord();
+      });
+
+      function showWord() {
+        if (currentIdx >= words.length) return showEnd();
+        currentWord = words[currentIdx];
+        helpUsed = false;
+        WordLibrary.recordSeen(currentWord.word);
+        counter.textContent = `Word ${currentIdx + 1} of ${words.length}`;
+        progressFill.style.width = `${((currentIdx) / words.length) * 100}%`;
+        wordDisplay.textContent = currentWord.word;
+        wordDisplay.style.animation = 'none';
+        requestAnimationFrame(() => { wordDisplay.style.animation = ''; });
+
+        document.getElementById('rocket').style.animation = 'none';
+        requestAnimationFrame(() => { document.getElementById('rocket').style.animation = 'rocket-fly 1s ease-out'; });
+
+        actionArea.innerHTML = `
+          <div class="word-buttons">
+            <button class="btn btn-green" id="know-btn">I Know It!</button>
+            <button class="btn btn-blue" id="help-btn">Help Me</button>
+            <button class="btn btn-red" id="skip-btn">Skip</button>
+          </div>
+        `;
+
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(actionArea.querySelectorAll('.btn'), { id: 'actions' });
+
+        document.getElementById('know-btn').addEventListener('click', () => showVerify());
+        document.getElementById('help-btn').addEventListener('click', () => showHelp());
+        document.getElementById('skip-btn').addEventListener('click', () => skipWord());
+
+        GamepadManager.updateButtonGuide({ a: 'Select', b: 'Skip', x: 'Help' });
+
+        // Gamepad shortcuts
+        const bHandler = () => { skipWord(); GamepadManager.off('b_press', bHandler); };
+        const xHandler = () => { showHelp(); GamepadManager.off('x_press', xHandler); };
+        GamepadManager.on('b_press', bHandler);
+        GamepadManager.on('x_press', xHandler);
+
+        // Parent hold controls
+        GamepadManager.on('y_hold', () => {
+          WordLibrary.markMastered(currentWord.word);
+          CarnivalUtils.showEncouragement(game, 'Marked as Mastered!');
+        });
+        GamepadManager.on('x_hold', () => {
+          WordLibrary.markNeedsPractice(currentWord.word);
+          CarnivalUtils.showEncouragement(game, 'Marked for Practice!');
+        });
+      }
+
+      function showVerify() {
+        AudioManager.play('buttonPress');
+        actionArea.innerHTML = `
+          <div class="word-sentence" style="margin-bottom:20px;">Read the word to your parent!</div>
+          <div class="word-buttons">
+            <button class="btn btn-green" id="correct-btn">Correct!</button>
+            <button class="btn btn-red" id="tryagain-btn">Try Again</button>
+          </div>
+        `;
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(actionArea.querySelectorAll('.btn'), { id: 'verify' });
+        GamepadManager.updateButtonGuide({ a: 'Select' });
+
+        document.getElementById('correct-btn').addEventListener('click', () => wordCorrect());
+        document.getElementById('tryagain-btn').addEventListener('click', () => wordWrong());
+      }
+
+      function showHelp() {
+        helpUsed = true;
+        AudioManager.play('buttonPress');
+        AudioManager.speak(currentWord.word);
+        const sentence = currentWord.sentence.replace(new RegExp(`\\b${currentWord.word}\\b`, 'gi'), `<strong>${currentWord.word}</strong>`);
+        actionArea.innerHTML = `
+          <div class="word-sentence">${sentence}</div>
+          <div class="word-buttons" style="margin-top:20px;">
+            <button class="btn btn-green" id="try-btn">Try Saying It!</button>
+            <button class="btn btn-red" id="next-btn">Next Word</button>
+          </div>
+        `;
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(actionArea.querySelectorAll('.btn'), { id: 'help' });
+
+        document.getElementById('try-btn').addEventListener('click', () => showVerify());
+        document.getElementById('next-btn').addEventListener('click', () => {
+          WordLibrary.markNeedsPractice(currentWord.word);
+          nextWord();
+        });
+      }
+
+      function wordCorrect() {
+        sessionCorrect++;
+        WordLibrary.recordCorrect(currentWord.word);
+        AudioManager.play('correct');
+        if (!helpUsed) {
+          const result = RewardSystem.addStar();
+          RewardSystem.animateStarEarned(game);
+          if (result.mmEarned) {
+            setTimeout(() => RewardSystem.animateMMEarned(game), 600);
+          }
+        }
+        CarnivalUtils.showEncouragement(game, CarnivalUtils.randomEncouragement());
+        setTimeout(() => nextWord(), 1200);
+      }
+
+      function wordWrong() {
+        AudioManager.play('incorrect');
+        const sentence = currentWord.sentence.replace(new RegExp(`\\b${currentWord.word}\\b`, 'gi'), `<strong>${currentWord.word}</strong>`);
+        actionArea.innerHTML = `
+          <div class="word-sentence">Let's practice! ${sentence}</div>
+          <div class="word-buttons" style="margin-top:20px;">
+            <button class="btn btn-blue" id="continue-btn">Continue</button>
+          </div>
+        `;
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(actionArea.querySelectorAll('.btn'), { id: 'continue' });
+        document.getElementById('continue-btn').addEventListener('click', () => nextWord());
+      }
+
+      function skipWord() {
+        AudioManager.play('buttonPress');
+        WordLibrary.markNeedsPractice(currentWord.word);
+        nextWord();
+      }
+
+      function nextWord() {
+        currentIdx++;
+        showWord();
+      }
+
+      function showEnd() {
+        gameArea.classList.add('hidden');
+        endArea.classList.remove('hidden');
+        const summary = RewardSystem.getSessionSummary();
+        CarnivalUtils.showEndScreen(endArea, {
+          stars: summary.stars,
+          mms: summary.mms,
+          wordsCorrect: sessionCorrect,
+          totalQuestions: words.length
+        });
+      }
+
+      // Exit, Skip, Settings buttons
+      document.getElementById('exit-btn').addEventListener('click', () => location.href = '../index.html');
+      document.getElementById('skip-nav-btn').addEventListener('click', () => { if (currentWord) skipWord(); });
+      document.getElementById('settings-nav-btn').addEventListener('click', () => location.href = '../index.html');
+      GamepadManager.on('exit_game', () => location.href = '../index.html');
+      GamepadManager.on('skip_question', () => { if (currentWord) skipWord(); });
+
+      // Session timer
+      if (settings.sessionTimer > 0) CarnivalUtils.startSessionTimer(settings.sessionTimer);
+      document.addEventListener('click', () => AudioManager.resume(), { once: true });
+    });
+  </script>
+</body>
+</html>

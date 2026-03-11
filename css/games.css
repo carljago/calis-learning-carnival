@@ -1,0 +1,709 @@
+/* === Game-Specific Styles === */
+
+/* === Game Container === */
+.game-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  padding-bottom: 60px;
+  position: relative;
+}
+
+.game-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  margin-bottom: 20px;
+}
+
+.game-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(24px, 3.5vw, 48px);
+}
+
+.game-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  gap: 24px;
+}
+
+/* === Intro Screen === */
+.intro-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  text-align: center;
+  gap: 24px;
+}
+
+.intro-screen h1 {
+  background: linear-gradient(135deg, var(--red), var(--orange), var(--yellow));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.intro-screen .game-emoji {
+  font-size: clamp(80px, 12vw, 160px);
+  animation: float 3s ease-in-out infinite;
+}
+
+.intro-screen p {
+  font-size: clamp(20px, 3vw, 36px);
+  color: #666;
+}
+
+/* === Starfield Background === */
+.starfield {
+  background: linear-gradient(to bottom, #0a0a2e 0%, #1a1a4e 50%, #2d1b69 100%);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.starfield::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, white, transparent),
+    radial-gradient(2px 2px at 40% 70%, white, transparent),
+    radial-gradient(1px 1px at 60% 20%, white, transparent),
+    radial-gradient(2px 2px at 80% 50%, white, transparent),
+    radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 50% 10%, white, transparent),
+    radial-gradient(2px 2px at 70% 90%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 90% 40%, white, transparent),
+    radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(2px 2px at 15% 60%, white, transparent);
+  animation: twinkle 4s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.starfield .game-area { z-index: 1; position: relative; }
+
+/* === Word Display (Word Rocket) === */
+.word-display {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(80px, 12vw, 160px);
+  color: white;
+  text-shadow: 0 0 30px rgba(255,217,61,0.5), 0 0 60px rgba(255,217,61,0.3);
+  text-align: center;
+  padding: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.rocket-emoji {
+  font-size: clamp(60px, 8vw, 120px);
+  display: block;
+  text-align: center;
+  animation: rocket-fly 2s ease-out;
+}
+
+@keyframes rocket-fly {
+  0% { transform: translateY(100px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.word-buttons {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.word-buttons .btn {
+  min-width: 200px;
+  font-size: clamp(20px, 3vw, 32px);
+}
+
+.word-sentence {
+  font-size: clamp(20px, 3vw, 32px);
+  text-align: center;
+  padding: 20px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 16px;
+  max-width: 600px;
+}
+
+.word-sentence strong {
+  color: var(--yellow);
+  font-size: 1.2em;
+}
+
+/* === Ten Frame (Math Rocket) === */
+.ten-frame {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 16px;
+  border: 3px solid rgba(255,255,255,0.3);
+  width: min(500px, 80vw);
+}
+
+.ten-frame-cell {
+  width: clamp(40px, 8vw, 70px);
+  height: clamp(40px, 8vw, 70px);
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: all 0.3s ease;
+}
+
+.ten-frame-cell.filled { background: var(--blue); border-color: var(--blue); }
+.ten-frame-cell.highlight { background: var(--green); border-color: var(--green); }
+.ten-frame-cell.crossout {
+  background: var(--red);
+  border-color: var(--red);
+  position: relative;
+}
+.ten-frame-cell.crossout::after {
+  content: '\2716';
+  color: white;
+  font-size: clamp(20px, 4vw, 36px);
+  font-weight: bold;
+}
+.ten-frame-cell.empty { background: rgba(255,255,255,0.1); }
+
+/* === Number Line === */
+.number-line {
+  position: relative;
+  width: min(600px, 85vw);
+  height: 120px;
+  margin: 20px auto;
+}
+
+.number-line-track {
+  position: absolute;
+  bottom: 40px;
+  left: 20px;
+  right: 20px;
+  height: 4px;
+  background: rgba(255,255,255,0.5);
+}
+
+.number-line-tick {
+  position: absolute;
+  bottom: 30px;
+  width: 2px;
+  height: 24px;
+  background: rgba(255,255,255,0.7);
+  transform: translateX(-50%);
+}
+
+.number-line-label {
+  position: absolute;
+  bottom: 4px;
+  font-family: 'Fredoka One', cursive;
+  font-size: 16px;
+  color: white;
+  transform: translateX(-50%);
+}
+
+.number-line-hop {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--yellow);
+  border-bottom: none;
+  border-radius: 50% 50% 0 0;
+  bottom: 44px;
+  animation: hop-appear 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes hop-appear {
+  0% { opacity: 0; transform: scaleY(0); }
+  100% { opacity: 1; transform: scaleY(1); }
+}
+
+/* === Number Buttons === */
+.number-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.number-btn {
+  width: clamp(50px, 8vw, 80px);
+  height: clamp(50px, 8vw, 80px);
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.15);
+  color: white;
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(20px, 3vw, 32px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.number-btn:hover, .number-btn.gp-focused {
+  background: rgba(255,255,255,0.3);
+  transform: scale(1.1);
+}
+
+.math-problem {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(48px, 8vw, 96px);
+  color: white;
+  text-align: center;
+  text-shadow: 0 0 20px rgba(255,217,61,0.4);
+}
+
+/* === Letter Slots (Word Builder) === */
+.letter-slots {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.letter-slot {
+  width: clamp(50px, 10vw, 80px);
+  height: clamp(60px, 12vw, 90px);
+  border: 4px dashed rgba(0,0,0,0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(32px, 5vw, 56px);
+  color: var(--text-dark);
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.letter-slot.filled {
+  border-style: solid;
+  border-color: var(--blue);
+  background: #E8F4FD;
+  animation: snap-in 0.2s ease;
+}
+
+@keyframes snap-in {
+  0% { transform: scale(1.3); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.letter-slot.correct { border-color: var(--green); background: #E8F8E8; }
+.letter-slot.wrong { border-color: var(--red); background: #FFE8E8; }
+
+/* === Letter Bank === */
+.letter-bank {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 600px;
+}
+
+.letter-tile {
+  width: clamp(45px, 8vw, 70px);
+  height: clamp(50px, 9vw, 75px);
+  border-radius: 12px;
+  border: 3px solid var(--blue);
+  background: white;
+  color: var(--text-dark);
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(24px, 4vw, 40px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.letter-tile:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+.letter-tile.used { opacity: 0.3; pointer-events: none; }
+.letter-tile.hint { border-color: var(--yellow); box-shadow: 0 0 15px rgba(255,217,61,0.5); }
+
+.word-picture {
+  font-size: clamp(80px, 12vw, 150px);
+  text-align: center;
+  margin: 10px 0;
+}
+
+/* === Sentence Maker === */
+.sentence-area {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 80px;
+  padding: 16px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 16px;
+  border: 3px dashed var(--blue);
+  width: 100%;
+  max-width: 800px;
+}
+
+.sentence-word {
+  padding: 10px 20px;
+  background: var(--blue);
+  color: white;
+  border-radius: 12px;
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(20px, 3vw, 32px);
+  animation: snap-in 0.2s ease;
+}
+
+.word-bank {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 800px;
+}
+
+.word-tile {
+  padding: 12px 24px;
+  border-radius: 16px;
+  border: 3px solid;
+  background: white;
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(18px, 2.5vw, 28px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.word-tile:nth-child(6n+1) { border-color: var(--red); color: var(--red); }
+.word-tile:nth-child(6n+2) { border-color: var(--orange); color: var(--orange); }
+.word-tile:nth-child(6n+3) { border-color: var(--green); color: var(--green); }
+.word-tile:nth-child(6n+4) { border-color: var(--blue); color: var(--blue); }
+.word-tile:nth-child(6n+5) { border-color: var(--purple); color: var(--purple); }
+.word-tile:nth-child(6n+6) { border-color: var(--pink); color: var(--pink); }
+
+.word-tile.used { opacity: 0.3; pointer-events: none; }
+.word-tile:hover { transform: translateY(-3px); }
+
+.picture-display {
+  font-size: clamp(80px, 12vw, 140px);
+  text-align: center;
+  padding: 20px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* === What's Missing === */
+.sequence-display {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.sequence-item {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(40px, 7vw, 80px);
+  color: var(--text-dark);
+  min-width: 60px;
+  text-align: center;
+}
+
+.sequence-blank {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(40px, 7vw, 80px);
+  color: var(--blue);
+  min-width: 60px;
+  width: clamp(60px, 10vw, 100px);
+  height: clamp(60px, 10vw, 100px);
+  border: 4px dashed var(--blue);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: gp-pulse 2s ease-in-out infinite;
+  background: rgba(77,150,255,0.1);
+}
+
+.answer-choices {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.answer-choice {
+  min-width: clamp(70px, 12vw, 120px);
+  min-height: clamp(70px, 12vw, 120px);
+  border-radius: 20px;
+  border: 4px solid #ddd;
+  background: white;
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(28px, 5vw, 48px);
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.answer-choice:hover { border-color: var(--blue); transform: scale(1.05); }
+.answer-choice.correct { border-color: var(--green); background: #E8F8E8; }
+.answer-choice.wrong { border-color: var(--red); background: #FFE8E8; animation: shake 0.4s ease; }
+
+/* === Color Party === */
+.color-swatches {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.color-swatch {
+  width: clamp(60px, 10vw, 100px);
+  height: clamp(60px, 10vw, 100px);
+  border-radius: 50%;
+  border: 4px solid rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.color-swatch:hover, .color-swatch.gp-focused {
+  transform: scale(1.15);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+.color-swatch.correct {
+  border-color: var(--green);
+  box-shadow: 0 0 20px rgba(107,203,119,0.5);
+}
+
+.crayon {
+  width: clamp(60px, 10vw, 100px);
+  height: clamp(200px, 30vw, 300px);
+  border-radius: 10px 10px 50% 50%;
+  border: 3px solid #999;
+  background: #f5f5f5;
+  position: relative;
+  transition: background-color 0.8s ease;
+  margin: 20px auto;
+}
+
+.crayon::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 30px solid inherit;
+  border-bottom-color: inherit;
+}
+
+.crayon.colored { border-color: rgba(0,0,0,0.3); }
+
+.counting-objects {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: clamp(40px, 6vw, 70px);
+}
+
+.color-boxes {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.color-box {
+  width: clamp(50px, 8vw, 80px);
+  height: clamp(50px, 8vw, 80px);
+  border-radius: 12px;
+  border: 3px solid #ccc;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.color-box.selected {
+  border-color: var(--text-dark);
+  transform: scale(1.05);
+}
+
+/* === Daily Challenge === */
+.daily-date {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(18px, 2.5vw, 28px);
+  color: var(--purple);
+  text-align: center;
+}
+
+.challenge-progress {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.challenge-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fredoka One', cursive;
+  font-size: 18px;
+  color: var(--purple);
+  transition: all 0.3s ease;
+}
+
+.challenge-dot.completed { background: var(--green); border-color: var(--green); color: white; }
+.challenge-dot.current { background: var(--yellow); border-color: var(--yellow); color: var(--text-dark); animation: gp-pulse 1.5s ease-in-out infinite; }
+.challenge-dot.upcoming { opacity: 0.4; }
+
+.challenge-transition {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(32px, 5vw, 64px);
+  color: var(--purple);
+  text-align: center;
+  animation: encouragement-pop 1.5s ease-out forwards;
+}
+
+.bonus-stars {
+  font-size: clamp(40px, 6vw, 80px);
+  text-align: center;
+  animation: bounce 0.6s ease;
+}
+
+/* === Main Menu === */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  padding: 20px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.game-card {
+  background: white;
+  border-radius: 24px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  border: 3px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.game-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+
+.game-card:nth-child(1) { border-color: var(--red); }
+.game-card:nth-child(2) { border-color: var(--orange); }
+.game-card:nth-child(3) { border-color: var(--yellow); }
+.game-card:nth-child(4) { border-color: var(--green); }
+.game-card:nth-child(5) { border-color: var(--blue); }
+.game-card:nth-child(6) { border-color: var(--purple); }
+
+.game-card-icon {
+  font-size: clamp(48px, 7vw, 80px);
+}
+
+.game-card-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(20px, 2.5vw, 32px);
+}
+
+.game-card-desc {
+  font-size: clamp(14px, 1.8vw, 20px);
+  color: #888;
+}
+
+/* === Feedback Overlay === */
+.feedback-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  pointer-events: none;
+}
+
+.feedback-overlay.correct-overlay {
+  background: rgba(107,203,119,0.2);
+}
+
+.feedback-overlay.wrong-overlay {
+  background: rgba(255,107,107,0.2);
+}
+
+.feedback-text {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(40px, 7vw, 80px);
+  animation: encouragement-pop 1.2s ease-out forwards;
+}
+
+.feedback-overlay.correct-overlay .feedback-text {
+  color: var(--green);
+  text-shadow: 2px 2px 0 white;
+}
+
+.feedback-overlay.wrong-overlay .feedback-text {
+  color: var(--red);
+  text-shadow: 2px 2px 0 white;
+}
+
+/* === Question Counter === */
+.question-counter {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(16px, 2vw, 24px);
+  color: rgba(255,255,255,0.8);
+  text-align: center;
+}
+
+.game-container:not(.starfield) .question-counter {
+  color: var(--text-dark);
+  opacity: 0.7;
+}

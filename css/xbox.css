@@ -1,0 +1,193 @@
+/* === Xbox Controller UI Styles === */
+
+/* Controller button icons */
+.xbox-a, .xbox-b, .xbox-x, .xbox-y {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-family: 'Fredoka One', cursive;
+  font-size: 14px;
+  color: white;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.xbox-a { background: #107C10; }
+.xbox-b { background: #E81123; }
+.xbox-x { background: #0078D7; }
+.xbox-y { background: #FFB900; color: #333; }
+
+/* Larger button icons for in-game use */
+.xbox-btn-lg {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+
+/* Button guide enhancements */
+#button-guide {
+  font-family: 'Quicksand', sans-serif;
+}
+
+#button-guide .guide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+#button-guide .guide-btn.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+#button-guide .guide-btn.clickable:hover {
+  background: rgba(255,255,255,0.25);
+  transform: translateY(-1px);
+}
+
+#button-guide .guide-btn.clickable:active {
+  transform: scale(0.95);
+  background: rgba(255,255,255,0.35);
+}
+
+/* Focus indicators - extra visible for TV */
+.gp-focused {
+  position: relative;
+  z-index: 10;
+}
+
+/* Hold progress indicator */
+.hold-progress {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+}
+
+.hold-progress circle {
+  fill: none;
+  stroke: var(--yellow);
+  stroke-width: 3;
+  stroke-dasharray: 88;
+  stroke-dashoffset: 88;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke-dashoffset 2s linear;
+}
+
+.hold-progress.active circle {
+  stroke-dashoffset: 0;
+}
+
+/* Parent settings lock hint */
+.parent-hint {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  padding: 4px;
+}
+
+/* Extra spacing for controller navigation */
+@media (min-width: 1200px) {
+  .game-card { padding: 32px; }
+  .btn { min-height: 80px; }
+  .word-tile { padding: 16px 28px; }
+  .letter-tile { width: 75px; height: 80px; }
+  .number-btn { width: 80px; height: 80px; }
+  .color-swatch { width: 100px; height: 100px; }
+  .answer-choice { min-width: 120px; min-height: 120px; }
+}
+
+/* Settings gear button */
+.settings-gear {
+  position: fixed;
+  bottom: 50px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  border: 2px solid #ddd;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.settings-gear:hover { transform: rotate(90deg); background: white; }
+
+/* Game nav bar - Exit + Skip + Settings always visible */
+.game-nav {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 101;
+}
+
+.game-nav .nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 2px solid rgba(0,0,0,0.1);
+  background: rgba(255,255,255,0.92);
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-dark, #2C3E50);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.game-nav .nav-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.game-nav .nav-btn.exit-btn { border-color: var(--red, #FF6B6B); }
+.game-nav .nav-btn.skip-btn { border-color: var(--orange, #FFA06B); }
+.game-nav .nav-btn.settings-btn { border-color: var(--blue, #4D96FF); }
+
+.game-nav .nav-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #eee;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid #ccc;
+}
+
+/* On starfield dark backgrounds, adjust nav bar */
+.starfield .game-nav .nav-btn {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border-color: rgba(255,255,255,0.3);
+  backdrop-filter: blur(8px);
+}
+
+.starfield .game-nav .nav-key {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border-color: rgba(255,255,255,0.3);
+}

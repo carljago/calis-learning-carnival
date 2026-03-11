@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What's Missing? - Cali's Learning Carnival</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/games.css">
+  <link rel="stylesheet" href="../css/xbox.css">
+</head>
+<body>
+  <div id="star-counter-container"></div>
+  <div class="game-container" id="game">
+    <div class="intro-screen" id="intro">
+      <div class="game-emoji">&#x1F9E9;</div>
+      <h1>What's Missing?</h1>
+      <p>Find the missing piece!</p>
+      <button class="btn btn-green" id="start-btn" style="font-size:28px;padding:20px 60px;">Start!</button>
+    </div>
+
+    <div class="game-area hidden" id="game-area">
+      <div class="question-counter" id="counter">Challenge 1 of 10</div>
+      <div class="progress-bar-container"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <div id="challenge-picture" style="text-align:center;"></div>
+      <div class="sequence-display" id="sequence"></div>
+      <div id="feedback" style="text-align:center;min-height:40px;margin:10px 0;"></div>
+      <div class="answer-choices" id="choices"></div>
+    </div>
+
+    <div class="hidden" id="end-area" style="width:100%;"></div>
+  </div>
+
+  <div id="button-guide">
+    <span class="guide-btn"><span class="xbox-a">A</span>/Enter: Select</span>
+    <span class="guide-btn"><span class="xbox-x">X</span>/Space: Hint</span>
+    <span class="guide-btn">Arrows: Navigate</span>
+  </div>
+  <div class="game-nav">
+    <button class="nav-btn exit-btn" id="exit-btn"><span class="nav-key">Q</span> Exit</button>
+    <button class="nav-btn skip-btn" id="skip-nav-btn"><span class="nav-key">N</span> Skip</button>
+    <button class="nav-btn settings-btn" id="settings-nav-btn"><span class="nav-key">S</span> Settings</button>
+  </div>
+
+  <script src="../js/words.js"></script>
+  <script src="../js/math.js"></script>
+  <script src="../js/gamepad.js"></script>
+  <script src="../js/progress.js"></script>
+  <script src="../js/rewards.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      ProgressTracker.load();
+      RewardSystem.init();
+      AudioManager.init();
+      GamepadManager.init();
+      RewardSystem.renderStarCounter(document.getElementById('star-counter-container'));
+
+      const settings = CarnivalUtils.getSettings();
+      const gameLength = settings.gameLength || 10;
+
+      // Challenge data
+      const numberChallenges = [
+        { seq: [1, 2, null, 4, 5], answer: 3, choices: [3, 6, 8] },
+        { seq: [21, null, 23, 24, 25], answer: 22, choices: [22, 20, 26] },
+        { seq: [10, 9, null, 7, 6], answer: 8, choices: [8, 5, 11] },
+        { seq: [5, 10, null, 20, 25], answer: 15, choices: [15, 12, 18] },
+        { seq: [2, 4, null, 8, 10], answer: 6, choices: [6, 5, 7] },
+        { seq: [null, 2, 3, 4, 5], answer: 1, choices: [1, 0, 6] },
+        { seq: [6, 7, 8, null, 10], answer: 9, choices: [9, 11, 5] },
+        { seq: [15, null, 17, 18], answer: 16, choices: [16, 14, 19] },
+        { seq: [3, null, 5, 6, 7], answer: 4, choices: [4, 2, 8] },
+        { seq: [11, 12, null, 14], answer: 13, choices: [13, 15, 10] },
+        { seq: [7, 8, 9, null], answer: 10, choices: [10, 11, 6] },
+        { seq: [null, 4, 6, 8], answer: 2, choices: [2, 1, 10] },
+        { seq: [20, null, 16, 14], answer: 18, choices: [18, 19, 15] },
+        { seq: [3, 6, null, 12], answer: 9, choices: [9, 8, 10] },
+        { seq: [null, 12, 13, 14, 15], answer: 11, choices: [11, 10, 16] },
+        { seq: [25, 24, null, 22, 21], answer: 23, choices: [23, 20, 26] },
+      ];
+
+      const alphaChallenges = [
+        { seq: ['A', 'B', null, 'D', 'E'], answer: 'C', choices: ['C', 'F', 'G'] },
+        { seq: ['a', null, 'c', 'd'], answer: 'b', choices: ['b', 'e', 'f'] },
+        { seq: ['M', 'N', null, 'P'], answer: 'O', choices: ['O', 'Q', 'L'] },
+        { seq: [null, 'B', 'C', 'D'], answer: 'A', choices: ['A', 'E', 'Z'] },
+        { seq: ['W', 'X', null, 'Z'], answer: 'Y', choices: ['Y', 'V', 'U'] },
+        { seq: ['f', 'g', null, 'i', 'j'], answer: 'h', choices: ['h', 'k', 'e'] },
+        { seq: ['R', null, 'T', 'U'], answer: 'S', choices: ['S', 'Q', 'V'] },
+        { seq: ['D', 'E', null, 'G'], answer: 'F', choices: ['F', 'H', 'C'] },
+        { seq: [null, 'j', 'k', 'l'], answer: 'i', choices: ['i', 'h', 'm'] },
+        { seq: ['p', 'q', null, 's', 't'], answer: 'r', choices: ['r', 'o', 'u'] },
+        { seq: ['T', null, 'V', 'W'], answer: 'U', choices: ['U', 'S', 'X'] },
+        { seq: ['G', 'H', 'I', null, 'K'], answer: 'J', choices: ['J', 'L', 'F'] },
+        { seq: [null, 'n', 'o', 'p'], answer: 'm', choices: ['m', 'l', 'q'] },
+        { seq: ['c', 'd', null, 'f'], answer: 'e', choices: ['e', 'g', 'b'] },
+        { seq: ['L', null, 'N', 'O', 'P'], answer: 'M', choices: ['M', 'K', 'Q'] },
+      ];
+
+      const wordChallenges = [
+        { emoji: '&#x1F9E6;', word: 's_ck', answer: 'o', choices: ['o', 'a', 'u'] },
+        { emoji: '&#x1F512;', word: 'loc_', answer: 'k', choices: ['k', 't', 'p'] },
+        { emoji: '&#x1F941;', word: '_rum', answer: 'd', choices: ['d', 'b', 'g'] },
+        { emoji: '&#x1F438;', word: 'fr_g', answer: 'o', choices: ['o', 'a', 'i'] },
+        { emoji: '&#x1F41B;', word: 'b_g', answer: 'u', choices: ['u', 'i', 'a'] },
+        { emoji: '&#x1F331;', word: 'pl_nt', answer: 'a', choices: ['a', 'e', 'i'] },
+        { emoji: '&#x2600;&#xFE0F;', word: 's_n', answer: 'u', choices: ['u', 'o', 'i'] },
+        { emoji: '&#x1F431;', word: 'c_t', answer: 'a', choices: ['a', 'o', 'u'] },
+        { emoji: '&#x1F436;', word: 'd_g', answer: 'o', choices: ['o', 'a', 'i'] },
+        { emoji: '&#x1F41F;', word: 'f_sh', answer: 'i', choices: ['i', 'a', 'u'] },
+        { emoji: '&#x1F3A9;', word: 'h_t', answer: 'a', choices: ['a', 'o', 'i'] },
+        { emoji: '&#x2615;', word: 'c_p', answer: 'u', choices: ['u', 'a', 'o'] },
+        { emoji: '&#x1F514;', word: 'be_l', answer: 'l', choices: ['l', 'n', 't'] },
+        { emoji: '&#x2B50;', word: 'st_r', answer: 'a', choices: ['a', 'e', 'o'] },
+        { emoji: '&#x1F6CF;&#xFE0F;', word: 'b_d', answer: 'e', choices: ['e', 'a', 'i'] },
+        { emoji: '&#x1F534;', word: 'r_d', answer: 'e', choices: ['e', 'a', 'i'] },
+        { emoji: '&#x1F535;', word: 'bl_e', answer: 'u', choices: ['u', 'a', 'o'] },
+        { emoji: '&#x1F407;', word: 'h_p', answer: 'o', choices: ['o', 'a', 'i'] },
+      ];
+
+      const rhymeChallenges = [
+        { seq: ['cat', 'bat', null, 'rat'], answer: 'mat', choices: ['mat', 'dog', 'run'] },
+        { seq: ['hop', 'top', null, 'pop'], answer: 'mop', choices: ['mop', 'hat', 'sun'] },
+        { seq: ['sun', 'fun', null, 'bun'], answer: 'run', choices: ['run', 'cat', 'big'] },
+        { seq: ['bug', 'hug', null, 'rug'], answer: 'mug', choices: ['mug', 'hat', 'sit'] },
+        { seq: ['red', 'bed', null, 'fed'], answer: 'led', choices: ['led', 'big', 'cup'] },
+        { seq: ['hot', 'not', null, 'dot'], answer: 'pot', choices: ['pot', 'run', 'bed'] },
+        { seq: ['pig', 'big', null, 'wig'], answer: 'dig', choices: ['dig', 'cat', 'hop'] },
+        { seq: ['log', 'fog', null, 'dog'], answer: 'hog', choices: ['hog', 'sit', 'red'] },
+        { seq: ['cap', 'map', null, 'tap'], answer: 'nap', choices: ['nap', 'cup', 'bed'] },
+        { seq: ['hen', 'ten', null, 'pen'], answer: 'men', choices: ['men', 'dog', 'fun'] },
+        { seq: ['van', 'man', null, 'pan'], answer: 'can', choices: ['can', 'big', 'hop'] },
+        { seq: ['pit', 'sit', null, 'bit'], answer: 'hit', choices: ['hit', 'mop', 'sun'] },
+        { seq: ['make', 'bake', null, 'lake'], answer: 'cake', choices: ['cake', 'dog', 'run'] },
+        { seq: ['day', 'may', null, 'say'], answer: 'play', choices: ['play', 'sit', 'cup'] },
+      ];
+
+      // Shuffle each pool then build challenge list cycling through types
+      const shuffledNumbers = CarnivalUtils.shuffleArray(numberChallenges);
+      const shuffledAlpha = CarnivalUtils.shuffleArray(alphaChallenges);
+      const shuffledWords = CarnivalUtils.shuffleArray(wordChallenges);
+      const shuffledRhymes = CarnivalUtils.shuffleArray(rhymeChallenges);
+      const allChallenges = [];
+      const types = ['number', 'alpha', 'word', 'rhyme'];
+      const counters = { number: 0, alpha: 0, word: 0, rhyme: 0 };
+      for (let i = 0; i < gameLength; i++) {
+        const type = types[i % types.length];
+        let pool;
+        switch (type) {
+          case 'number': pool = shuffledNumbers; break;
+          case 'alpha': pool = shuffledAlpha; break;
+          case 'word': pool = shuffledWords; break;
+          case 'rhyme': pool = shuffledRhymes; break;
+        }
+        allChallenges.push({ type, data: pool[counters[type] % pool.length] });
+        counters[type]++;
+      }
+
+      let currentIdx = 0;
+      let sessionCorrect = 0;
+      let hintUsed = false;
+      let wrongAttempt = false;
+
+      const game = document.getElementById('game');
+      const gameArea = document.getElementById('game-area');
+      const endArea = document.getElementById('end-area');
+      const sequenceEl = document.getElementById('sequence');
+      const choicesEl = document.getElementById('choices');
+      const feedbackEl = document.getElementById('feedback');
+      const pictureEl = document.getElementById('challenge-picture');
+
+      GamepadManager.registerFocusGroup([document.getElementById('start-btn')], { id: 'intro' });
+      document.getElementById('start-btn').addEventListener('click', () => {
+        AudioManager.resume();
+        document.getElementById('intro').classList.add('hidden');
+        gameArea.classList.remove('hidden');
+        showChallenge();
+      });
+
+      function showChallenge() {
+        if (currentIdx >= allChallenges.length) return showEnd();
+        const ch = allChallenges[currentIdx];
+        hintUsed = false;
+        wrongAttempt = false;
+
+        document.getElementById('counter').textContent = `Challenge ${currentIdx + 1} of ${allChallenges.length}`;
+        document.getElementById('progress-fill').style.width = `${(currentIdx / allChallenges.length) * 100}%`;
+        feedbackEl.innerHTML = '';
+        pictureEl.innerHTML = '';
+
+        if (ch.type === 'number' || ch.type === 'alpha') {
+          renderSequence(ch.data.seq);
+          renderChoices(ch.data.choices, ch.data.answer);
+        } else if (ch.type === 'word') {
+          pictureEl.innerHTML = `<div style="font-size:100px;">${ch.data.emoji}</div>`;
+          renderWordSequence(ch.data.word);
+          renderChoices(ch.data.choices, ch.data.answer);
+        } else if (ch.type === 'rhyme') {
+          renderSequence(ch.data.seq);
+          renderChoices(ch.data.choices, ch.data.answer);
+        }
+      }
+
+      function renderSequence(seq) {
+        sequenceEl.innerHTML = '';
+        seq.forEach(item => {
+          if (item === null) {
+            const el = document.createElement('div');
+            el.className = 'sequence-blank';
+            el.textContent = '?';
+            sequenceEl.appendChild(el);
+          } else {
+            const el = document.createElement('div');
+            el.className = 'sequence-item';
+            el.textContent = item;
+            sequenceEl.appendChild(el);
+          }
+        });
+      }
+
+      function renderWordSequence(word) {
+        sequenceEl.innerHTML = '';
+        word.split('').forEach(ch => {
+          const el = document.createElement('div');
+          if (ch === '_') {
+            el.className = 'sequence-blank';
+            el.textContent = '?';
+            el.style.fontSize = 'clamp(40px, 7vw, 80px)';
+          } else {
+            el.className = 'sequence-item';
+            el.textContent = ch;
+          }
+          sequenceEl.appendChild(el);
+        });
+      }
+
+      function renderChoices(choices, answer) {
+        choicesEl.innerHTML = '';
+        const shuffled = CarnivalUtils.shuffleArray([...choices]);
+        shuffled.forEach(choice => {
+          const btn = document.createElement('button');
+          btn.className = 'answer-choice';
+          btn.textContent = choice;
+          btn.addEventListener('click', () => checkAnswer(choice, answer, btn));
+          choicesEl.appendChild(btn);
+        });
+
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(choicesEl.querySelectorAll('.answer-choice'), { id: 'choices' });
+      }
+
+      function checkAnswer(choice, answer, btn) {
+        if (String(choice) === String(answer)) {
+          sessionCorrect++;
+          btn.classList.add('correct');
+          AudioManager.play('correct');
+          if (!hintUsed && !wrongAttempt) {
+            const result = RewardSystem.addStar();
+            RewardSystem.animateStarEarned(game);
+            if (result.mmEarned) setTimeout(() => RewardSystem.animateMMEarned(game), 600);
+          }
+          CarnivalUtils.showEncouragement(game, CarnivalUtils.randomEncouragement());
+
+          // Fill in the blank
+          document.querySelectorAll('.sequence-blank').forEach(el => {
+            el.className = 'sequence-item';
+            el.textContent = answer;
+            el.style.color = 'var(--green)';
+          });
+
+          setTimeout(() => { currentIdx++; showChallenge(); }, 1300);
+        } else {
+          wrongAttempt = true;
+          btn.classList.add('wrong');
+          AudioManager.play('incorrect');
+          feedbackEl.innerHTML = '<div style="color:var(--red);font-family:Fredoka One;font-size:24px;">Not quite! Try again!</div>';
+          setTimeout(() => { btn.classList.remove('wrong'); feedbackEl.innerHTML = ''; }, 800);
+        }
+      }
+
+      // Hint with X: eliminate one wrong answer
+      GamepadManager.on('x_press', () => {
+        if (hintUsed) return;
+        hintUsed = true;
+        const ch = allChallenges[currentIdx];
+        const answer = ch.data.answer;
+        const btns = choicesEl.querySelectorAll('.answer-choice');
+        for (const btn of btns) {
+          if (String(btn.textContent) !== String(answer)) {
+            btn.style.opacity = '0.2';
+            btn.style.pointerEvents = 'none';
+            break;
+          }
+        }
+      });
+
+      function showEnd() {
+        gameArea.classList.add('hidden');
+        endArea.classList.remove('hidden');
+        CarnivalUtils.showEndScreen(endArea, {
+          stars: RewardSystem.getSessionSummary().stars,
+          mms: RewardSystem.getSessionSummary().mms,
+          wordsCorrect: sessionCorrect,
+          totalQuestions: allChallenges.length
+        });
+      }
+
+      // Exit, Skip, Settings
+      function skipCurrent() { currentIdx++; showChallenge(); }
+      document.getElementById('exit-btn').addEventListener('click', () => location.href = '../index.html');
+      document.getElementById('skip-nav-btn').addEventListener('click', skipCurrent);
+      document.getElementById('settings-nav-btn').addEventListener('click', () => location.href = '../index.html');
+      GamepadManager.on('exit_game', () => location.href = '../index.html');
+      GamepadManager.on('skip_question', skipCurrent);
+
+      document.addEventListener('click', () => AudioManager.resume(), { once: true });
+    });
+  </script>
+</body>
+</html>

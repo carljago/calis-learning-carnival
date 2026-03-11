@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Challenge - Cali's Learning Carnival</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/games.css">
+  <link rel="stylesheet" href="../css/xbox.css">
+</head>
+<body>
+  <div id="star-counter-container"></div>
+  <div class="game-container" id="game" style="background: linear-gradient(135deg, #F5F0FF, #FFF0F5, #F0F8FF);">
+    <div class="intro-screen" id="intro">
+      <div class="game-emoji">&#x2B50;</div>
+      <h1>Daily Challenge!</h1>
+      <div class="daily-date" id="today-date"></div>
+      <p>Complete 5 mini-challenges for a bonus!</p>
+      <button class="btn btn-purple" id="start-btn" style="font-size:28px;padding:20px 60px;">Let's Go!</button>
+    </div>
+
+    <div class="hidden" id="challenge-area" style="width:100%;max-width:900px;margin:0 auto;">
+      <div class="challenge-progress" id="progress-dots"></div>
+      <div class="game-area" id="game-area"></div>
+    </div>
+
+    <div class="hidden" id="end-area" style="width:100%;"></div>
+  </div>
+
+  <div id="button-guide">
+    <span class="guide-btn"><span class="xbox-a">A</span>/Enter: Select</span>
+    <span class="guide-btn">Arrows: Navigate</span>
+  </div>
+  <div class="game-nav">
+    <button class="nav-btn exit-btn" id="exit-btn"><span class="nav-key">Q</span> Exit</button>
+    <button class="nav-btn skip-btn" id="skip-nav-btn"><span class="nav-key">N</span> Skip</button>
+    <button class="nav-btn settings-btn" id="settings-nav-btn"><span class="nav-key">S</span> Settings</button>
+  </div>
+
+  <script src="../js/words.js"></script>
+  <script src="../js/math.js"></script>
+  <script src="../js/gamepad.js"></script>
+  <script src="../js/progress.js"></script>
+  <script src="../js/rewards.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      ProgressTracker.load();
+      RewardSystem.init();
+      AudioManager.init();
+      GamepadManager.init();
+      RewardSystem.renderStarCounter(document.getElementById('star-counter-container'));
+
+      const settings = CarnivalUtils.getSettings();
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      document.getElementById('today-date').textContent = dateStr;
+
+      // Date-based seed
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      let rngState = seed;
+      function nextRandom() {
+        rngState = ((rngState * 9301 + 49297) % 233280);
+        return rngState / 233280;
+      }
+
+      // Check bonus
+      const bonusKey = 'calis-daily-bonus';
+      const bonusAlreadyEarned = localStorage.getItem(bonusKey) === String(seed);
+
+      const totalChallenges = 5;
+      let currentChallenge = 0;
+      let challengeCorrect = 0;
+
+      const game = document.getElementById('game');
+      const challengeArea = document.getElementById('challenge-area');
+      const gameArea = document.getElementById('game-area');
+      const endArea = document.getElementById('end-area');
+      const progressDots = document.getElementById('progress-dots');
+
+      GamepadManager.registerFocusGroup([document.getElementById('start-btn')], { id: 'intro' });
+      document.getElementById('start-btn').addEventListener('click', () => {
+        AudioManager.resume();
+        document.getElementById('intro').classList.add('hidden');
+        challengeArea.classList.remove('hidden');
+        showTransition();
+      });
+
+      function updateDots() {
+        let html = '';
+        for (let i = 0; i < totalChallenges; i++) {
+          let cls = 'challenge-dot';
+          if (i < currentChallenge) cls += ' completed';
+          else if (i === currentChallenge) cls += ' current';
+          else cls += ' upcoming';
+          html += `<div class="${cls}">${i + 1}</div>`;
+        }
+        progressDots.innerHTML = html;
+      }
+
+      function showTransition() {
+        updateDots();
+        if (currentChallenge >= totalChallenges) return showEnd();
+
+        const labels = ['Word Time!', 'Math Time!', 'Spell It!', 'Color Time!', 'Fill the Blank!'];
+        gameArea.innerHTML = `<div class="challenge-transition">${labels[currentChallenge]}</div>`;
+
+        setTimeout(() => {
+          switch (currentChallenge) {
+            case 0: showWordChallenge(); break;
+            case 1: showMathChallenge(); break;
+            case 2: showSpellChallenge(); break;
+            case 3: showColorChallenge(); break;
+            case 4: showMissingChallenge(); break;
+          }
+        }, 1200);
+      }
+
+      // Challenge 1: Word
+      function showWordChallenge() {
+        const words = WordLibrary.getWordsForDifficulty(settings.difficulty || 'easy');
+        const word = words[Math.floor(nextRandom() * words.length)];
+        gameArea.innerHTML = `
+          <div style="text-align:center;">
+            <div style="font-family:'Fredoka One';font-size:clamp(60px,10vw,120px);color:var(--purple);margin:20px 0;">${word.word}</div>
+            <p style="font-size:24px;color:#666;margin:20px 0;">Read this word to your parent!</p>
+            <div style="display:flex;gap:16px;justify-content:center;">
+              <button class="btn btn-green" id="dc-correct">Correct!</button>
+              <button class="btn btn-red" id="dc-wrong">Try Again</button>
+            </div>
+          </div>
+        `;
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(gameArea.querySelectorAll('.btn'), { id: 'dc-word' });
+        document.getElementById('dc-correct').onclick = () => {
+          challengeCorrect++;
+          RewardSystem.addStar();
+          AudioManager.play('correct');
+          RewardSystem.animateStarEarned(game);
+          CarnivalUtils.showEncouragement(game, CarnivalUtils.randomEncouragement());
+          setTimeout(() => { currentChallenge++; showTransition(); }, 1200);
+        };
+        document.getElementById('dc-wrong').onclick = () => {
+          AudioManager.play('incorrect');
+          CarnivalUtils.showEncouragement(game, 'Good try!');
+          setTimeout(() => { currentChallenge++; showTransition(); }, 1000);
+        };
+      }
+
+      // Challenge 2: Math
+      function showMathChallenge() {
+        const problem = MathEngine.generateProblem('add5');
+        gameArea.innerHTML = `
+          <div style="text-align:center;">
+            <div style="font-family:'Fredoka One';font-size:clamp(48px,8vw,96px);color:var(--purple);margin:20px 0;">${problem.display}</div>
+            <div class="number-buttons" id="dc-numbers" style="margin-top:30px;"></div>
+            <div id="dc-math-fb" style="min-height:40px;margin-top:16px;"></div>
+          </div>
+        `;
+        const numBtns = document.getElementById('dc-numbers');
+        for (let i = 0; i <= 10; i++) {
+          const btn = document.createElement('button');
+          btn.className = 'number-btn';
+          btn.style.cssText = 'background:rgba(155,89,182,0.2);color:var(--purple);border-color:var(--purple);';
+          btn.textContent = i;
+          btn.onclick = () => {
+            if (MathEngine.checkAnswer(problem, i)) {
+              challengeCorrect++;
+              RewardSystem.addStar();
+              AudioManager.play('correct');
+              RewardSystem.animateStarEarned(game);
+              document.getElementById('dc-math-fb').innerHTML = `<span style="color:var(--green);font-family:'Fredoka One';font-size:28px;">Yes! ${problem.display.replace('?', problem.answer)}</span>`;
+              setTimeout(() => { currentChallenge++; showTransition(); }, 1200);
+            } else {
+              AudioManager.play('incorrect');
+              document.getElementById('dc-math-fb').innerHTML = `<span style="color:var(--red);font-family:'Fredoka One';">Try again!</span>`;
+              setTimeout(() => document.getElementById('dc-math-fb').innerHTML = '', 800);
+            }
+          };
+          numBtns.appendChild(btn);
+        }
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(numBtns.querySelectorAll('.number-btn'), { id: 'dc-math', columns: 11 });
+      }
+
+      // Challenge 3: Spell
+      function showSpellChallenge() {
+        const spellWords = [
+          { word: 'cat', emoji: '&#x1F431;' }, { word: 'dog', emoji: '&#x1F436;' },
+          { word: 'sun', emoji: '&#x2600;&#xFE0F;' }, { word: 'bug', emoji: '&#x1F41B;' },
+          { word: 'hat', emoji: '&#x1F3A9;' }, { word: 'cup', emoji: '&#x2615;' }
+        ];
+        const w = spellWords[Math.floor(nextRandom() * spellWords.length)];
+        let placed = [];
+        const abc = 'abcdefghijklmnopqrstuvwxyz';
+        let extras = [];
+        while (extras.length < 3) {
+          const l = abc[Math.floor(Math.random() * 26)];
+          if (!w.word.includes(l) && !extras.includes(l)) extras.push(l);
+        }
+        const letters = CarnivalUtils.shuffleArray([...w.word.split(''), ...extras]);
+
+        function render() {
+          let slotsHtml = '<div class="letter-slots">';
+          for (let i = 0; i < w.word.length; i++) {
+            slotsHtml += `<div class="letter-slot ${placed[i] ? 'filled' : ''}">${placed[i] || ''}</div>`;
+          }
+          slotsHtml += '</div>';
+
+          let bankHtml = '<div class="letter-bank" id="dc-bank">';
+          const usedCounts = {};
+          placed.forEach(l => { if (l) usedCounts[l] = (usedCounts[l] || 0) + 1; });
+          const tileUsed = {};
+          letters.forEach((l, i) => {
+            tileUsed[l] = (tileUsed[l] || 0) + 1;
+            const isUsed = (usedCounts[l] || 0) >= tileUsed[l];
+            bankHtml += `<button class="letter-tile ${isUsed ? 'used' : ''}" data-letter="${l}">${l}</button>`;
+          });
+          bankHtml += '</div>';
+
+          gameArea.innerHTML = `
+            <div style="text-align:center;">
+              <div style="font-size:80px;margin:10px 0;">${w.emoji}</div>
+              ${slotsHtml}
+              <div id="dc-spell-fb" style="min-height:30px;margin:8px 0;"></div>
+              ${bankHtml}
+            </div>
+          `;
+
+          gameArea.querySelectorAll('.letter-tile').forEach(tile => {
+            tile.onclick = () => {
+              if (placed.length >= w.word.length || tile.classList.contains('used')) return;
+              placed.push(tile.dataset.letter);
+              AudioManager.play('buttonPress');
+              render();
+              if (placed.length === w.word.length) setTimeout(check, 300);
+            };
+          });
+
+          GamepadManager.clearFocusGroups();
+          const bank = gameArea.querySelector('#dc-bank');
+          if (bank) GamepadManager.registerFocusGroup(bank.querySelectorAll('.letter-tile:not(.used)'), { id: 'dc-spell' });
+        }
+
+        function check() {
+          if (placed.join('') === w.word) {
+            challengeCorrect++;
+            RewardSystem.addStar();
+            AudioManager.play('correct');
+            RewardSystem.animateStarEarned(game);
+            CarnivalUtils.showEncouragement(game, CarnivalUtils.randomEncouragement());
+            setTimeout(() => { currentChallenge++; showTransition(); }, 1200);
+          } else {
+            AudioManager.play('incorrect');
+            const fb = document.getElementById('dc-spell-fb');
+            if (fb) fb.innerHTML = '<span style="color:var(--red);font-family:Fredoka One;">Try again!</span>';
+            setTimeout(() => { placed = []; render(); }, 800);
+          }
+        }
+
+        GamepadManager.on('b_press', () => {
+          if (placed.length > 0) { placed.pop(); AudioManager.play('buttonPress'); render(); }
+        });
+
+        render();
+      }
+
+      // Challenge 4: Color
+      function showColorChallenge() {
+        const objects = [
+          { emoji: '&#x2600;&#xFE0F;', name: 'sun', color: 'yellow' },
+          { emoji: '&#x1F34E;', name: 'apple', color: 'red' },
+          { emoji: '&#x1F438;', name: 'frog', color: 'green' },
+          { emoji: '&#x1F30A;', name: 'water', color: 'blue' }
+        ];
+        const cm = { red: '#FF6B6B', blue: '#4D96FF', yellow: '#FFD93D', green: '#6BCB77', orange: '#FFA06B', purple: '#9B59B6' };
+        const obj = objects[Math.floor(nextRandom() * objects.length)];
+        const ac = Object.keys(cm);
+        const wrong = ac.filter(c => c !== obj.color);
+        const choices = CarnivalUtils.shuffleArray([obj.color, ...CarnivalUtils.shuffleArray(wrong).slice(0, 2)]);
+
+        gameArea.innerHTML = `
+          <div style="text-align:center;">
+            <p style="font-family:'Fredoka One';font-size:clamp(20px,3vw,32px);">Which color matches the ${obj.name}?</p>
+            <div style="font-size:100px;margin:16px 0;">${obj.emoji}</div>
+            <div class="color-swatches" id="dc-colors"></div>
+            <div id="dc-color-fb" style="min-height:40px;margin-top:16px;"></div>
+          </div>
+        `;
+        const container = document.getElementById('dc-colors');
+        choices.forEach(c => {
+          const s = document.createElement('button');
+          s.className = 'color-swatch';
+          s.style.background = cm[c];
+          s.onclick = () => {
+            if (c === obj.color) {
+              challengeCorrect++;
+              RewardSystem.addStar();
+              AudioManager.play('correct');
+              RewardSystem.animateStarEarned(game);
+              CarnivalUtils.showEncouragement(game, `Yes! The ${obj.name} is ${obj.color}!`);
+              setTimeout(() => { currentChallenge++; showTransition(); }, 1200);
+            } else {
+              AudioManager.play('incorrect');
+              document.getElementById('dc-color-fb').innerHTML = `<span style="color:var(--red);font-family:'Fredoka One';">That's ${c}!</span>`;
+              setTimeout(() => document.getElementById('dc-color-fb').innerHTML = '', 800);
+            }
+          };
+          container.appendChild(s);
+        });
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(container.querySelectorAll('.color-swatch'), { id: 'dc-color' });
+      }
+
+      // Challenge 5: Missing
+      function showMissingChallenge() {
+        const challenges = [
+          { seq: ['1', '2', '?', '4', '5'], answer: '3', choices: ['3', '6', '8'] },
+          { seq: ['A', 'B', '?', 'D'], answer: 'C', choices: ['C', 'E', 'G'] },
+          { seq: ['5', '?', '7', '8'], answer: '6', choices: ['6', '4', '9'] },
+          { seq: ['a', '?', 'c', 'd'], answer: 'b', choices: ['b', 'e', 'f'] }
+        ];
+        const ch = challenges[Math.floor(nextRandom() * challenges.length)];
+        const shuffledChoices = CarnivalUtils.shuffleArray([...ch.choices]);
+
+        let seqHtml = '<div class="sequence-display" style="margin:20px 0;">';
+        ch.seq.forEach(item => {
+          if (item === '?') seqHtml += '<div class="sequence-blank">?</div>';
+          else seqHtml += `<div class="sequence-item">${item}</div>`;
+        });
+        seqHtml += '</div>';
+
+        gameArea.innerHTML = `
+          <div style="text-align:center;">
+            <p style="font-family:'Fredoka One';font-size:clamp(20px,3vw,32px);">What's missing?</p>
+            ${seqHtml}
+            <div class="answer-choices" id="dc-answers"></div>
+            <div id="dc-miss-fb" style="min-height:40px;margin-top:16px;"></div>
+          </div>
+        `;
+        const container = document.getElementById('dc-answers');
+        shuffledChoices.forEach(c => {
+          const btn = document.createElement('button');
+          btn.className = 'answer-choice';
+          btn.textContent = c;
+          btn.onclick = () => {
+            if (c === ch.answer) {
+              challengeCorrect++;
+              btn.classList.add('correct');
+              RewardSystem.addStar();
+              AudioManager.play('correct');
+              RewardSystem.animateStarEarned(game);
+              document.querySelectorAll('.sequence-blank').forEach(el => {
+                el.className = 'sequence-item'; el.textContent = ch.answer; el.style.color = 'var(--green)';
+              });
+              CarnivalUtils.showEncouragement(game, CarnivalUtils.randomEncouragement());
+              setTimeout(() => { currentChallenge++; showTransition(); }, 1200);
+            } else {
+              btn.classList.add('wrong');
+              AudioManager.play('incorrect');
+              document.getElementById('dc-miss-fb').innerHTML = '<span style="color:var(--red);font-family:Fredoka One;">Try again!</span>';
+              setTimeout(() => { btn.classList.remove('wrong'); document.getElementById('dc-miss-fb').innerHTML = ''; }, 800);
+            }
+          };
+          container.appendChild(btn);
+        });
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(container.querySelectorAll('.answer-choice'), { id: 'dc-missing' });
+      }
+
+      function showEnd() {
+        challengeArea.classList.add('hidden');
+        endArea.classList.remove('hidden');
+
+        let bonusStars = 0;
+        if (!bonusAlreadyEarned && challengeCorrect >= 3) {
+          bonusStars = 1;
+          RewardSystem.addStar();
+          localStorage.setItem(bonusKey, String(seed));
+        }
+
+        const summary = RewardSystem.getSessionSummary();
+        endArea.innerHTML = `
+          <div class="end-screen">
+            <h1 class="end-title">Daily Challenge Complete!</h1>
+            ${bonusStars > 0 ? '<div class="bonus-stars" style="font-size:clamp(40px,6vw,80px);margin:16px 0;">BONUS: +3 &#x2B50;&#x2B50;&#x2B50;</div>' : ''}
+            ${bonusAlreadyEarned ? '<p style="color:#888;">(Bonus already earned today - great practice!)</p>' : ''}
+            <div class="end-stats">
+              <div class="end-stat"><span class="end-icon">&#x2B50;</span><span class="end-label">Stars</span><span class="end-value">${summary.stars}</span></div>
+              <div class="end-stat"><span class="end-icon">&#x1F36C;</span><span class="end-label">M&amp;Ms</span><span class="end-value">${summary.mms}</span></div>
+              <div class="end-stat"><span class="end-icon">&#x2705;</span><span class="end-label">Correct</span><span class="end-value">${challengeCorrect}/5</span></div>
+            </div>
+            <div class="end-buttons">
+              <button class="btn btn-purple" onclick="location.reload()">Play Again</button>
+              <button class="btn btn-blue" onclick="location.href='../index.html'">Main Menu</button>
+            </div>
+          </div>
+        `;
+
+        CarnivalUtils.createConfetti(endArea);
+        AudioManager.play('celebration');
+        if (window.ProgressTracker) {
+          ProgressTracker.recordSession({ game: 'daily-challenge', stars: summary.stars, mms: summary.mms, correct: challengeCorrect });
+        }
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(endArea.querySelectorAll('.btn'), { id: 'end' });
+      }
+
+      // Exit, Skip, Settings
+      function skipCurrent() { currentChallenge++; showTransition(); }
+      document.getElementById('exit-btn').addEventListener('click', () => location.href = '../index.html');
+      document.getElementById('skip-nav-btn').addEventListener('click', skipCurrent);
+      document.getElementById('settings-nav-btn').addEventListener('click', () => location.href = '../index.html');
+      GamepadManager.on('exit_game', () => location.href = '../index.html');
+      GamepadManager.on('skip_question', skipCurrent);
+
+      document.addEventListener('click', () => AudioManager.resume(), { once: true });
+    });
+  </script>
+</body>
+</html>

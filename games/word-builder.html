@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Builder - Cali's Learning Carnival</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/games.css">
+  <link rel="stylesheet" href="../css/xbox.css">
+</head>
+<body>
+  <div id="star-counter-container"></div>
+  <div class="game-container" id="game">
+    <div class="intro-screen" id="intro">
+      <div class="game-emoji">&#x1F9F1;</div>
+      <h1>Word Builder!</h1>
+      <p>Spell the words letter by letter!</p>
+      <button class="btn btn-green" id="start-btn" style="font-size:28px;padding:20px 60px;">Start!</button>
+    </div>
+
+    <div class="game-area hidden" id="game-area">
+      <div class="question-counter" id="counter">Word 1 of 10</div>
+      <div class="progress-bar-container"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="word-picture" id="picture"></div>
+      <button class="btn btn-purple" id="hear-btn" style="margin:8px auto;display:block;padding:8px 24px;font-size:18px;">&#x1F50A; Hear Word</button>
+      <div class="letter-slots" id="slots"></div>
+      <div id="hint-area" style="text-align:center;min-height:30px;color:#888;"></div>
+      <div class="letter-bank" id="bank"></div>
+    </div>
+
+    <div class="hidden" id="end-area" style="width:100%;"></div>
+  </div>
+
+  <div id="button-guide">
+    <span class="guide-btn"><span class="xbox-a">A</span>/Enter: Place</span>
+    <span class="guide-btn"><span class="xbox-b">B</span>/Esc: Undo</span>
+    <span class="guide-btn"><span class="xbox-x">X</span>/Space: Hint</span>
+    <span class="guide-btn"><span class="xbox-y">Y</span>/Tab: Hear Word</span>
+    <span class="guide-btn">Arrows: Navigate</span>
+  </div>
+  <div class="game-nav">
+    <button class="nav-btn exit-btn" id="exit-btn"><span class="nav-key">Q</span> Exit</button>
+    <button class="nav-btn skip-btn" id="skip-nav-btn"><span class="nav-key">N</span> Skip</button>
+    <button class="nav-btn settings-btn" id="settings-nav-btn"><span class="nav-key">S</span> Settings</button>
+  </div>
+
+  <script src="../js/words.js"></script>
+  <script src="../js/math.js"></script>
+  <script src="../js/gamepad.js"></script>
+  <script src="../js/progress.js"></script>
+  <script src="../js/rewards.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      ProgressTracker.load();
+      RewardSystem.init();
+      AudioManager.init();
+      GamepadManager.init();
+      RewardSystem.renderStarCounter(document.getElementById('star-counter-container'));
+
+      const settings = CarnivalUtils.getSettings();
+      const gameLength = settings.gameLength || 10;
+
+      const wordData = [
+        { word: 'cat', emoji: '&#x1F431;' },
+        { word: 'dog', emoji: '&#x1F436;' },
+        { word: 'bug', emoji: '&#x1F41B;' },
+        { word: 'sun', emoji: '&#x2600;&#xFE0F;' },
+        { word: 'run', emoji: '&#x1F3C3;' },
+        { word: 'hop', emoji: '&#x1F407;' },
+        { word: 'mom', emoji: '&#x1F469;' },
+        { word: 'dad', emoji: '&#x1F468;' },
+        { word: 'sock', emoji: '&#x1F9E6;' },
+        { word: 'lock', emoji: '&#x1F512;' },
+        { word: 'drum', emoji: '&#x1F941;' },
+        { word: 'frog', emoji: '&#x1F438;' },
+        { word: 'jump', emoji: '&#x1F938;' },
+        { word: 'look', emoji: '&#x1F440;' },
+        { word: 'play', emoji: '&#x1F3A8;' },
+        { word: 'help', emoji: '&#x1F91A;' },
+        { word: 'stop', emoji: '&#x1F6D1;' },
+        { word: 'red', emoji: '&#x1F534;' },
+        { word: 'blue', emoji: '&#x1F535;' },
+        { word: 'pink', emoji: '&#x1F49F;' },
+        { word: 'one', emoji: '1&#xFE0F;&#x20E3;' },
+        { word: 'two', emoji: '2&#xFE0F;&#x20E3;' },
+        { word: 'six', emoji: '6&#xFE0F;&#x20E3;' },
+        { word: 'ten', emoji: '&#x1F51F;' },
+        { word: 'fish', emoji: '&#x1F41F;' },
+        { word: 'star', emoji: '&#x2B50;' },
+        { word: 'bell', emoji: '&#x1F514;' },
+        { word: 'hat', emoji: '&#x1F3A9;' },
+        { word: 'cup', emoji: '&#x2615;' },
+        { word: 'bed', emoji: '&#x1F6CF;&#xFE0F;' },
+        { word: 'pig', emoji: '&#x1F437;' },
+        { word: 'cow', emoji: '&#x1F404;' },
+        { word: 'hen', emoji: '&#x1F414;' },
+        { word: 'fox', emoji: '&#x1F98A;' },
+        { word: 'bee', emoji: '&#x1F41D;' },
+        { word: 'ant', emoji: '&#x1F41C;' },
+        { word: 'bat', emoji: '&#x1F987;' },
+        { word: 'owl', emoji: '&#x1F989;' },
+        { word: 'map', emoji: '&#x1F5FA;&#xFE0F;' },
+        { word: 'pen', emoji: '&#x1F58A;&#xFE0F;' },
+        { word: 'box', emoji: '&#x1F4E6;' },
+        { word: 'bus', emoji: '&#x1F68C;' },
+        { word: 'car', emoji: '&#x1F697;' },
+        { word: 'van', emoji: '&#x1F690;' },
+        { word: 'log', emoji: '&#x1FAB5;' },
+        { word: 'nut', emoji: '&#x1F95C;' },
+        { word: 'jam', emoji: '&#x1F353;' },
+        { word: 'egg', emoji: '&#x1F95A;' },
+        { word: 'pie', emoji: '&#x1F967;' },
+        { word: 'ice', emoji: '&#x1F9CA;' },
+        { word: 'fan', emoji: '&#x1FA81;' },
+        { word: 'mop', emoji: '&#x1FAA3;' },
+        { word: 'web', emoji: '&#x1F578;&#xFE0F;' },
+        { word: 'gem', emoji: '&#x1F48E;' },
+        { word: 'king', emoji: '&#x1F451;' },
+        { word: 'ring', emoji: '&#x1F48D;' },
+        { word: 'moon', emoji: '&#x1F319;' },
+        { word: 'tree', emoji: '&#x1F333;' },
+        { word: 'book', emoji: '&#x1F4D6;' },
+        { word: 'cake', emoji: '&#x1F382;' },
+        { word: 'boat', emoji: '&#x26F5;' },
+        { word: 'rain', emoji: '&#x1F327;&#xFE0F;' },
+        { word: 'gift', emoji: '&#x1F381;' },
+        { word: 'lamp', emoji: '&#x1F4A1;' },
+        { word: 'hand', emoji: '&#x270B;' },
+        { word: 'nose', emoji: '&#x1F443;' },
+      ];
+
+      const allLetters = 'abcdefghijklmnopqrstuvwxyz';
+      let words = CarnivalUtils.shuffleArray(wordData).slice(0, gameLength);
+      let currentIdx = 0;
+      let sessionCorrect = 0;
+      let placed = [];
+      let wrongAttempts = 0;
+      let hintsUsed = 0;
+      let hintRevealed = [];  // indices of letters revealed by hints
+
+      const game = document.getElementById('game');
+      const gameArea = document.getElementById('game-area');
+      const endArea = document.getElementById('end-area');
+
+      // Hint reveal order: first letter, last letter, then 2nd, 3rd, ...
+      function getHintOrder(wordLen) {
+        const order = [];
+        if (wordLen === 0) return order;
+        order.push(0);
+        if (wordLen > 1) order.push(wordLen - 1);
+        for (let i = 1; i < wordLen - 1; i++) {
+          order.push(i);
+        }
+        return order;
+      }
+
+      // Warm up speechSynthesis on user gesture so future calls work
+      function warmUpSpeech() {
+        if ('speechSynthesis' in window) {
+          const silent = new SpeechSynthesisUtterance('');
+          silent.volume = 0;
+          window.speechSynthesis.speak(silent);
+        }
+      }
+
+      GamepadManager.registerFocusGroup([document.getElementById('start-btn')], { id: 'intro' });
+      document.getElementById('start-btn').addEventListener('click', () => {
+        AudioManager.resume();
+        warmUpSpeech();
+        document.getElementById('intro').classList.add('hidden');
+        gameArea.classList.remove('hidden');
+        setTimeout(() => showWord(), 150);
+      });
+
+      function showWord() {
+        if (currentIdx >= words.length) return showEnd();
+        const w = words[currentIdx];
+        placed = [];
+        wrongAttempts = 0;
+        hintsUsed = 0;
+        hintRevealed = [];
+
+        document.getElementById('counter').textContent = `Word ${currentIdx + 1} of ${words.length}`;
+        document.getElementById('progress-fill').style.width = `${(currentIdx / words.length) * 100}%`;
+        document.getElementById('picture').innerHTML = w.emoji;
+        document.getElementById('hint-area').textContent = '';
+
+        renderSlots(w.word);
+        renderBank(w.word);
+
+        // Speak the word automatically on load
+        AudioManager.speak(w.word);
+
+        // Hear Word button (no penalty)
+        document.getElementById('hear-btn').onclick = () => AudioManager.speak(w.word);
+
+        // Reset button guide X label back to Hint
+        const guideBtns = document.querySelectorAll('#button-guide .guide-btn');
+        guideBtns.forEach(btn => {
+          if (btn.querySelector('.xbox-x')) {
+            btn.innerHTML = '<span class="xbox-x">X</span>/Space: Hint';
+          }
+        });
+      }
+
+      function renderSlots(word) {
+        const slots = document.getElementById('slots');
+        slots.innerHTML = '';
+        for (let i = 0; i < word.length; i++) {
+          const slot = document.createElement('div');
+          slot.className = 'letter-slot';
+          if (placed[i]) {
+            slot.classList.add('filled');
+            slot.textContent = placed[i];
+          } else if (hintRevealed.includes(i)) {
+            // Show hint letter in green
+            slot.classList.add('filled');
+            slot.textContent = word[i];
+            slot.style.color = 'var(--green)';
+            slot.style.opacity = '0.7';
+          }
+          slots.appendChild(slot);
+        }
+      }
+
+      function renderBank(word) {
+        const bank = document.getElementById('bank');
+        bank.innerHTML = '';
+
+        // Create letter set: word letters + 4 random distractors
+        let letters = word.split('');
+        const distractors = new Set();
+        while (distractors.size < 4) {
+          const l = allLetters[Math.floor(Math.random() * 26)];
+          if (!letters.includes(l)) distractors.add(l);
+        }
+        letters = CarnivalUtils.shuffleArray([...letters, ...distractors]);
+
+        letters.forEach(l => {
+          const tile = document.createElement('button');
+          tile.className = 'letter-tile';
+          tile.textContent = l;
+          tile.dataset.letter = l;
+          tile.addEventListener('click', () => placeLetter(l, tile));
+          bank.appendChild(tile);
+        });
+
+        updateUsedState(word);
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(bank.querySelectorAll('.letter-tile'), { id: 'bank', columns: Math.min(letters.length, 8) });
+      }
+
+      function updateUsedState(word) {
+        const bank = document.getElementById('bank');
+        const tiles = bank.querySelectorAll('.letter-tile');
+        const placedCounts = {};
+        placed.forEach(l => { if (l) placedCounts[l] = (placedCounts[l] || 0) + 1; });
+
+        const usedCounts = {};
+        tiles.forEach(tile => {
+          const l = tile.dataset.letter;
+          usedCounts[l] = (usedCounts[l] || 0) + 1;
+          if ((placedCounts[l] || 0) >= usedCounts[l]) {
+            tile.classList.add('used');
+          } else {
+            tile.classList.remove('used');
+          }
+        });
+      }
+
+      function placeLetter(letter, tile) {
+        const w = words[currentIdx];
+        if (placed.length >= w.word.length) return;
+
+        // Skip over hint-revealed positions
+        let nextPos = placed.length;
+        while (nextPos < w.word.length && hintRevealed.includes(nextPos)) {
+          placed.push(w.word[nextPos]);
+          nextPos++;
+        }
+        if (nextPos >= w.word.length) return;
+
+        AudioManager.play('buttonPress');
+        placed.push(letter);
+
+        // Also skip any trailing hint positions
+        let afterPos = placed.length;
+        while (afterPos < w.word.length && hintRevealed.includes(afterPos)) {
+          placed.push(w.word[afterPos]);
+          afterPos++;
+        }
+
+        renderSlots(w.word);
+        updateUsedState(w.word);
+
+        if (placed.length >= w.word.length) {
+          setTimeout(() => checkSpelling(), 300);
+        }
+      }
+
+      function checkSpelling() {
+        const w = words[currentIdx];
+        const attempt = placed.join('');
+        const slots = document.getElementById('slots').children;
+
+        if (attempt === w.word) {
+          // Correct!
+          sessionCorrect++;
+          Array.from(slots).forEach(s => s.classList.add('correct'));
+          AudioManager.play('correct');
+          if (hintsUsed === 0 && wrongAttempts === 0) {
+            const result = RewardSystem.addStar();
+            RewardSystem.animateStarEarned(game);
+            if (result.mmEarned) setTimeout(() => RewardSystem.animateMMEarned(game), 600);
+          }
+          CarnivalUtils.showEncouragement(game, CarnivalUtils.randomEncouragement());
+          // Speak word on completion, wait for speech, then advance
+          setTimeout(() => {
+            AudioManager.speak(w.word).then(() => {
+              setTimeout(() => { currentIdx++; showWord(); }, 400);
+            });
+          }, 500);
+        } else {
+          // Wrong
+          wrongAttempts++;
+          Array.from(slots).forEach(s => s.classList.add('wrong'));
+          AudioManager.play('incorrect');
+
+          if (wrongAttempts >= 2) {
+            document.getElementById('hint-area').textContent = 'Listen carefully and try again!';
+          }
+
+          setTimeout(() => {
+            // Re-speak the word after a wrong attempt
+            AudioManager.speak(w.word);
+            placed = [];
+            // Keep hint-revealed positions filled
+            for (let i = 0; i < w.word.length; i++) {
+              if (hintRevealed.includes(i)) {
+                placed.push(w.word[i]);
+              } else if (placed.length <= i) {
+                break;
+              }
+            }
+            placed = [];
+            renderSlots(w.word);
+            renderBank(w.word);
+          }, 800);
+        }
+      }
+
+      // Hear word again with Y (no penalty)
+      GamepadManager.on('y_press', () => {
+        if (currentIdx < words.length) {
+          AudioManager.speak(words[currentIdx].word);
+        }
+      });
+
+      // Undo with B
+      GamepadManager.on('b_press', () => {
+        if (placed.length > 0) {
+          // Pop back to the last non-hint position
+          do {
+            placed.pop();
+          } while (placed.length > 0 && hintRevealed.includes(placed.length));
+          renderSlots(words[currentIdx].word);
+          updateUsedState(words[currentIdx].word);
+          AudioManager.play('buttonPress');
+        }
+      });
+
+      // Hint with X - progressively reveal letters: first, last, 2nd, 3rd, ...
+      // Once all revealed, X becomes "Next Word"
+      GamepadManager.on('x_press', () => {
+        const w = words[currentIdx];
+
+        // If all letters already revealed by hints, advance to next word
+        if (hintRevealed.length >= w.word.length) {
+          currentIdx++;
+          showWord();
+          return;
+        }
+
+        const hintOrder = getHintOrder(w.word.length);
+
+        // Find next unrevealed index
+        let nextIdx = null;
+        for (const idx of hintOrder) {
+          if (!hintRevealed.includes(idx)) {
+            nextIdx = idx;
+            break;
+          }
+        }
+        if (nextIdx === null) return;
+
+        hintsUsed++;
+        hintRevealed.push(nextIdx);
+
+        renderSlots(w.word);
+        AudioManager.play('buttonPress');
+        AudioManager.speak(w.word);
+
+        // Check if word is now fully revealed
+        if (hintRevealed.length >= w.word.length) {
+          document.getElementById('hint-area').textContent = 'Word complete! Press Hint/X for next word.';
+          // Update the button guide to show "Next"
+          const guideBtns = document.querySelectorAll('#button-guide .guide-btn');
+          guideBtns.forEach(btn => {
+            if (btn.querySelector('.xbox-x')) {
+              btn.innerHTML = '<span class="xbox-x">X</span>/Space: Next';
+            }
+          });
+        } else {
+          document.getElementById('hint-area').textContent = hintsUsed === 1
+            ? 'Here\'s a letter! (no stars for this one)'
+            : 'Here\'s another letter!';
+          setTimeout(() => {
+            const hintArea = document.getElementById('hint-area');
+            if (hintArea && !hintArea.textContent.includes('next word')) hintArea.textContent = '';
+          }, 2500);
+        }
+      });
+
+      function showEnd() {
+        gameArea.classList.add('hidden');
+        endArea.classList.remove('hidden');
+        const summary = RewardSystem.getSessionSummary();
+        CarnivalUtils.showEndScreen(endArea, {
+          stars: summary.stars,
+          mms: summary.mms,
+          wordsCorrect: sessionCorrect,
+          totalQuestions: words.length
+        });
+      }
+
+      // Exit, Skip, Settings
+      function skipCurrent() { currentIdx++; showWord(); }
+      document.getElementById('exit-btn').addEventListener('click', () => location.href = '../index.html');
+      document.getElementById('skip-nav-btn').addEventListener('click', skipCurrent);
+      document.getElementById('settings-nav-btn').addEventListener('click', () => location.href = '../index.html');
+      GamepadManager.on('exit_game', () => location.href = '../index.html');
+      GamepadManager.on('skip_question', skipCurrent);
+
+      document.addEventListener('click', () => AudioManager.resume(), { once: true });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cali's Learning Carnival</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/games.css">
+  <link rel="stylesheet" href="css/xbox.css">
+</head>
+<body>
+  <div id="session-timer" class="hidden"></div>
+  <div id="star-counter-container"></div>
+
+  <div style="text-align:center; padding: 30px 20px 10px;">
+    <h1 style="background: linear-gradient(135deg, var(--red), var(--orange), var(--yellow), var(--green), var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+      Cali's Learning Carnival
+    </h1>
+    <p style="font-size: clamp(18px, 2.5vw, 28px); color: #888; margin-top: 8px;">Let's Learn and Have Fun!</p>
+  </div>
+
+  <div class="menu-grid" id="game-grid">
+    <a href="games/word-rocket.html" class="game-card" aria-label="Word Rocket">
+      <div class="game-card-icon">&#x1F680;</div>
+      <div class="game-card-title">Word Rocket</div>
+      <div class="game-card-desc">Read words and blast off!</div>
+    </a>
+    <a href="games/math-rocket.html" class="game-card" aria-label="Math Rocket">
+      <div class="game-card-icon">&#x1F4AF;</div>
+      <div class="game-card-title">Math Rocket</div>
+      <div class="game-card-desc">Solve math and fly high!</div>
+    </a>
+    <a href="games/word-builder.html" class="game-card" aria-label="Word Builder">
+      <div class="game-card-icon">&#x1F9F1;</div>
+      <div class="game-card-title">Word Builder</div>
+      <div class="game-card-desc">Spell words letter by letter!</div>
+    </a>
+    <a href="games/sentence-maker.html" class="game-card" aria-label="Sentence Maker">
+      <div class="game-card-icon">&#x1F4D6;</div>
+      <div class="game-card-title">Sentence Maker</div>
+      <div class="game-card-desc">Build your own sentences!</div>
+    </a>
+    <a href="games/whats-missing.html" class="game-card" aria-label="What's Missing">
+      <div class="game-card-icon">&#x1F9E9;</div>
+      <div class="game-card-title">What's Missing?</div>
+      <div class="game-card-desc">Find the missing piece!</div>
+    </a>
+    <a href="games/color-party.html" class="game-card" aria-label="Color Party">
+      <div class="game-card-icon">&#x1F308;</div>
+      <div class="game-card-title">Color Party</div>
+      <div class="game-card-desc">Colors, counting &amp; fun!</div>
+    </a>
+  </div>
+
+  <div style="text-align: center; padding: 20px;">
+    <a href="games/daily-challenge.html" class="btn btn-purple" style="font-size: clamp(20px, 3vw, 32px); padding: 20px 40px;" id="daily-btn">
+      &#x2B50; Daily Challenge &#x2B50;
+    </a>
+  </div>
+
+  <button class="settings-gear" id="open-settings" aria-label="Settings">&#x2699;</button>
+
+  <!-- Parent Settings Overlay -->
+  <div id="parent-settings-overlay" class="settings-overlay hidden">
+    <div class="settings-panel">
+      <h2>Parent Settings</h2>
+
+      <div class="setting-group">
+        <label>M&amp;M Reward Ratio</label>
+        <input type="range" id="setting-mm-ratio" min="1" max="20" value="10">
+        <div style="text-align:center;margin-top:6px;">
+          <span id="ratio-display">10</span> stars = 1 M&amp;M
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Difficulty</label>
+        <div class="radio-group">
+          <label><input type="radio" name="difficulty" value="easy"><span> Easy</span></label>
+          <label><input type="radio" name="difficulty" value="medium"><span> Medium</span></label>
+          <label><input type="radio" name="difficulty" value="hard"><span> Hard</span></label>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Game Length</label>
+        <div class="radio-group">
+          <label><input type="radio" name="gameLength" value="5"><span> Quick (5)</span></label>
+          <label><input type="radio" name="gameLength" value="10"><span> Normal (10)</span></label>
+          <label><input type="radio" name="gameLength" value="15"><span> Long (15)</span></label>
+          <label><input type="radio" name="gameLength" value="20"><span> Marathon (20)</span></label>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Sound Effects</label>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div class="toggle-switch">
+            <input type="checkbox" id="setting-sound" checked>
+            <span class="toggle-slider"></span>
+          </div>
+          <input type="range" id="setting-volume" min="0" max="1" step="0.1" value="0.7" style="flex:1;">
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Vibration Feedback</label>
+        <div class="toggle-switch">
+          <input type="checkbox" id="setting-vibration" checked>
+          <span class="toggle-slider"></span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>Session Timer</label>
+        <select id="setting-timer" style="padding:10px;border-radius:10px;font-size:16px;border:2px solid #ddd;">
+          <option value="0">No Limit</option>
+          <option value="10">10 minutes</option>
+          <option value="15">15 minutes</option>
+          <option value="20">20 minutes</option>
+        </select>
+      </div>
+
+      <div class="settings-buttons">
+        <button class="btn btn-blue" id="settings-view-progress">View Progress</button>
+        <button class="btn btn-orange" id="settings-export">Export Report</button>
+        <button class="btn btn-red" id="settings-reset">Reset Progress</button>
+        <button class="btn btn-green" id="settings-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Modal -->
+  <div id="progress-modal" class="progress-modal hidden">
+    <div class="card" style="position:relative;">
+      <div id="progress-content"></div>
+      <br>
+      <button class="btn btn-green" id="progress-close" style="width:100%;">Close</button>
+    </div>
+  </div>
+
+  <div id="button-guide">
+    <span class="guide-btn"><span class="xbox-a">A</span>/Enter: Select</span>
+    <span class="guide-btn"><span class="xbox-b">B</span>/Esc: Close</span>
+    <span class="guide-btn"><strong>S</strong>: Settings</span>
+    <span class="guide-btn">Arrows: Navigate</span>
+  </div>
+
+  <script src="js/words.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/gamepad.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/rewards.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      ProgressTracker.load();
+      RewardSystem.init();
+      AudioManager.init();
+      GamepadManager.init();
+
+      RewardSystem.renderStarCounter(document.getElementById('star-counter-container'));
+
+      // Gamepad navigation for game cards
+      const cards = document.querySelectorAll('.game-card');
+      GamepadManager.registerFocusGroup(cards, { id: 'games', columns: 3 });
+      GamepadManager.registerFocusGroup([document.getElementById('daily-btn')], { id: 'daily' });
+
+      // Parent settings
+      CarnivalUtils.initParentSettings();
+
+      document.getElementById('open-settings').addEventListener('click', () => {
+        document.getElementById('parent-settings-overlay').classList.remove('hidden');
+      });
+
+      GamepadManager.on('parent_settings', () => {
+        document.getElementById('parent-settings-overlay').classList.toggle('hidden');
+      });
+
+      GamepadManager.on('b_press', () => {
+        document.getElementById('parent-settings-overlay').classList.add('hidden');
+        document.getElementById('progress-modal').classList.add('hidden');
+      });
+
+      // Session timer
+      const settings = CarnivalUtils.getSettings();
+      if (settings.sessionTimer > 0) {
+        CarnivalUtils.startSessionTimer(settings.sessionTimer);
+      }
+
+      // Audio init on first interaction
+      document.addEventListener('click', () => AudioManager.resume(), { once: true });
+    });
+  </script>
+</body>
+</html>

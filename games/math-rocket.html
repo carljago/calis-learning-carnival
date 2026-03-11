@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Rocket - Cali's Learning Carnival</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/games.css">
+  <link rel="stylesheet" href="../css/xbox.css">
+</head>
+<body>
+  <div id="star-counter-container"></div>
+  <div class="game-container starfield" id="game">
+    <div class="intro-screen" id="intro">
+      <div class="game-emoji">&#x1F4AF;</div>
+      <h1>Math Rocket!</h1>
+      <p>Solve problems to fly high!</p>
+      <button class="btn btn-green" id="start-btn" style="font-size:28px;padding:20px 60px;">Start!</button>
+    </div>
+
+    <div class="game-area hidden" id="game-area">
+      <div class="question-counter" id="counter">Problem 1 of 10</div>
+      <div class="progress-bar-container"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="math-problem" id="problem-display"></div>
+      <div id="visual-aid"></div>
+      <div class="number-buttons" id="number-buttons"></div>
+      <div id="feedback" style="min-height:40px;text-align:center;"></div>
+    </div>
+
+    <div class="hidden" id="end-area" style="width:100%;"></div>
+  </div>
+
+  <div id="button-guide">
+    <span class="guide-btn"><span class="xbox-a">A</span>/Enter: Select</span>
+    <span class="guide-btn">Arrows: Navigate</span>
+  </div>
+  <div class="game-nav">
+    <button class="nav-btn exit-btn" id="exit-btn"><span class="nav-key">Q</span> Exit</button>
+    <button class="nav-btn skip-btn" id="skip-nav-btn"><span class="nav-key">N</span> Skip</button>
+    <button class="nav-btn settings-btn" id="settings-nav-btn"><span class="nav-key">S</span> Settings</button>
+  </div>
+
+  <script src="../js/words.js"></script>
+  <script src="../js/math.js"></script>
+  <script src="../js/gamepad.js"></script>
+  <script src="../js/progress.js"></script>
+  <script src="../js/rewards.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      ProgressTracker.load();
+      RewardSystem.init();
+      AudioManager.init();
+      GamepadManager.init();
+      RewardSystem.renderStarCounter(document.getElementById('star-counter-container'));
+
+      const settings = CarnivalUtils.getSettings();
+      const gameLength = settings.gameLength || 10;
+      let currentIdx = 0;
+      let sessionCorrect = 0;
+      let currentProblem = null;
+      let answeredCurrent = false;
+      let wrongAttempt = false;
+      let useVisual = 'tenframe'; // alternate between tenframe and numberline
+
+      const game = document.getElementById('game');
+      const intro = document.getElementById('intro');
+      const gameArea = document.getElementById('game-area');
+      const endArea = document.getElementById('end-area');
+      const problemDisplay = document.getElementById('problem-display');
+      const visualAid = document.getElementById('visual-aid');
+      const numberButtons = document.getElementById('number-buttons');
+      const feedbackEl = document.getElementById('feedback');
+      const counter = document.getElementById('counter');
+      const progressFill = document.getElementById('progress-fill');
+
+      GamepadManager.registerFocusGroup([document.getElementById('start-btn')], { id: 'intro' });
+
+      document.getElementById('start-btn').addEventListener('click', () => {
+        AudioManager.resume();
+        intro.classList.add('hidden');
+        gameArea.classList.remove('hidden');
+        showProblem();
+      });
+
+      function showProblem() {
+        if (currentIdx >= gameLength) return showEnd();
+        currentProblem = MathEngine.getNextProblem();
+        MathEngine.recordSeen();
+        answeredCurrent = false;
+        wrongAttempt = false;
+        counter.textContent = `Problem ${currentIdx + 1} of ${gameLength}`;
+        progressFill.style.width = `${(currentIdx / gameLength) * 100}%`;
+        problemDisplay.textContent = currentProblem.display;
+        feedbackEl.innerHTML = '';
+
+        // Visual aid
+        if (useVisual === 'tenframe') {
+          renderTenFrame();
+          useVisual = 'numberline';
+        } else {
+          renderNumberLine();
+          useVisual = 'tenframe';
+        }
+
+        // Number buttons 0-10
+        numberButtons.innerHTML = '';
+        for (let i = 0; i <= 10; i++) {
+          const btn = document.createElement('button');
+          btn.className = 'number-btn';
+          btn.textContent = i;
+          btn.addEventListener('click', () => checkAnswer(i));
+          numberButtons.appendChild(btn);
+        }
+
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(numberButtons.querySelectorAll('.number-btn'), { id: 'numbers', columns: 11 });
+        GamepadManager.updateButtonGuide({ a: 'Select', b: 'Back' });
+      }
+
+      function renderTenFrame() {
+        const p = currentProblem;
+        let cells;
+        if (p.op === '+') {
+          cells = MathEngine.generateTenFrameData(p.a + p.b, p.b, 0);
+        } else if (p.op === '-') {
+          cells = MathEngine.generateTenFrameData(p.a, 0, p.b);
+        } else {
+          // bonds
+          cells = MathEngine.generateTenFrameData(p.a, p.answer, 0);
+        }
+
+        let html = '<div class="ten-frame">';
+        cells.forEach((cell, i) => {
+          html += `<div class="ten-frame-cell ${cell}" style="animation-delay:${i * 0.1}s"></div>`;
+        });
+        html += '</div>';
+        visualAid.innerHTML = html;
+      }
+
+      function renderNumberLine() {
+        const p = currentProblem;
+        const max = 10;
+        const width = Math.min(600, window.innerWidth * 0.85);
+        const pad = 20;
+        const usable = width - pad * 2;
+
+        let html = `<div class="number-line" style="width:${width}px">`;
+        html += `<div class="number-line-track"></div>`;
+
+        for (let i = 0; i <= max; i++) {
+          const x = pad + (i / max) * usable;
+          html += `<div class="number-line-tick" style="left:${x}px"></div>`;
+          html += `<div class="number-line-label" style="left:${x}px">${i}</div>`;
+        }
+
+        // Draw hops
+        if (p.op === '+') {
+          for (let h = 0; h < p.b; h++) {
+            const startN = p.a + h;
+            const x1 = pad + (startN / max) * usable;
+            const hopW = usable / max;
+            html += `<div class="number-line-hop" style="left:${x1}px;width:${hopW}px;animation-delay:${h * 0.4}s"></div>`;
+          }
+        } else if (p.op === '-') {
+          for (let h = 0; h < p.b; h++) {
+            const startN = p.a - h - 1;
+            const x1 = pad + (startN / max) * usable;
+            const hopW = usable / max;
+            html += `<div class="number-line-hop" style="left:${x1}px;width:${hopW}px;animation-delay:${h * 0.4}s;border-color:var(--red);"></div>`;
+          }
+        }
+
+        html += '</div>';
+        visualAid.innerHTML = html;
+      }
+
+      function checkAnswer(answer) {
+        if (answeredCurrent) return;
+        if (MathEngine.checkAnswer(currentProblem, answer)) {
+          answeredCurrent = true;
+          sessionCorrect++;
+          MathEngine.recordCorrect();
+          AudioManager.play('correct');
+          let result = { mmEarned: false };
+          if (!wrongAttempt) {
+            result = RewardSystem.addStar();
+            RewardSystem.animateStarEarned(game);
+          }
+
+          const p = currentProblem;
+          let display = p.op === 'bond'
+            ? `${p.a} = ${p.b} + ${p.answer}`
+            : `${p.a} ${p.op} ${p.b} = ${p.answer}`;
+          feedbackEl.innerHTML = `<div style="color:var(--green);font-family:'Fredoka One';font-size:28px;">Yes! ${display}</div>`;
+          CarnivalUtils.showEncouragement(game, CarnivalUtils.randomEncouragement());
+
+          if (result.mmEarned) {
+            setTimeout(() => RewardSystem.animateMMEarned(game), 600);
+          }
+
+          setTimeout(() => { currentIdx++; showProblem(); }, 1500);
+        } else {
+          wrongAttempt = true;
+          AudioManager.play('incorrect');
+          feedbackEl.innerHTML = `<div style="color:var(--yellow);font-family:'Fredoka One';font-size:24px;">Not quite! Try again!</div>`;
+          // Re-animate visual
+          if (useVisual === 'numberline') renderTenFrame(); else renderNumberLine();
+        }
+      }
+
+      function showEnd() {
+        gameArea.classList.add('hidden');
+        endArea.classList.remove('hidden');
+        const summary = RewardSystem.getSessionSummary();
+        CarnivalUtils.showEndScreen(endArea, {
+          stars: summary.stars,
+          mms: summary.mms,
+          mathCorrect: sessionCorrect,
+          totalQuestions: gameLength
+        });
+      }
+
+      // Parent controls
+      GamepadManager.on('y_hold', () => { MathEngine.levelUp(); CarnivalUtils.showEncouragement(game, 'Level Up!'); });
+      GamepadManager.on('x_hold', () => { MathEngine.levelDown(); CarnivalUtils.showEncouragement(game, 'Level Down!'); });
+
+      // Exit, Skip, Settings
+      function skipCurrent() { currentIdx++; showProblem(); }
+      document.getElementById('exit-btn').addEventListener('click', () => location.href = '../index.html');
+      document.getElementById('skip-nav-btn').addEventListener('click', skipCurrent);
+      document.getElementById('settings-nav-btn').addEventListener('click', () => location.href = '../index.html');
+      GamepadManager.on('exit_game', () => location.href = '../index.html');
+      GamepadManager.on('skip_question', skipCurrent);
+
+      document.addEventListener('click', () => AudioManager.resume(), { once: true });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentence Maker - Cali's Learning Carnival</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/games.css">
+  <link rel="stylesheet" href="../css/xbox.css">
+</head>
+<body>
+  <div id="star-counter-container"></div>
+  <div class="game-container" id="game">
+    <div class="intro-screen" id="intro">
+      <div class="game-emoji">&#x1F4D6;</div>
+      <h1>Sentence Maker!</h1>
+      <p>Build sentences about the pictures!</p>
+      <button class="btn btn-green" id="start-btn" style="font-size:28px;padding:20px 60px;">Start!</button>
+    </div>
+
+    <div class="game-area hidden" id="game-area">
+      <div class="question-counter" id="counter">Sentence 1 of 10</div>
+      <div class="progress-bar-container"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="picture-display" id="picture"></div>
+      <p style="text-align:center;font-size:clamp(16px,2.5vw,24px);color:#888;">Make a sentence about the picture!</p>
+      <div class="sentence-area" id="sentence-area">
+        <span style="color:#ccc;font-style:italic;">Your sentence will appear here...</span>
+      </div>
+      <div id="submit-area" style="text-align:center;margin:10px 0;"></div>
+      <div class="word-bank" id="word-bank"></div>
+    </div>
+
+    <div class="hidden" id="end-area" style="width:100%;"></div>
+  </div>
+
+  <div id="button-guide">
+    <span class="guide-btn"><span class="xbox-a">A</span>/Enter: Add Word</span>
+    <span class="guide-btn"><span class="xbox-b">B</span>/Esc: Undo</span>
+    <span class="guide-btn"><span class="xbox-y">Y</span>/Tab: Submit</span>
+    <span class="guide-btn">Arrows: Navigate</span>
+  </div>
+  <div class="game-nav">
+    <button class="nav-btn exit-btn" id="exit-btn"><span class="nav-key">Q</span> Exit</button>
+    <button class="nav-btn skip-btn" id="skip-nav-btn"><span class="nav-key">N</span> Skip</button>
+    <button class="nav-btn settings-btn" id="settings-nav-btn"><span class="nav-key">S</span> Settings</button>
+  </div>
+
+  <script src="../js/words.js"></script>
+  <script src="../js/math.js"></script>
+  <script src="../js/gamepad.js"></script>
+  <script src="../js/progress.js"></script>
+  <script src="../js/rewards.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      ProgressTracker.load();
+      RewardSystem.init();
+      AudioManager.init();
+      GamepadManager.init();
+      RewardSystem.renderStarCounter(document.getElementById('star-counter-container'));
+
+      const settings = CarnivalUtils.getSettings();
+      const gameLength = settings.gameLength || 10;
+
+      const scenarios = [
+        { picture: '&#x1F9D2;&#x1F938;', desc: 'jumping', words: ['I', 'can', 'jump', 'the', 'she', 'like', 'to', 'run', 'is', 'my'] },
+        { picture: '&#x1F466;&#x1F4D6;', desc: 'reading', words: ['I', 'like', 'to', 'read', 'he', 'can', 'a', 'book', 'see', 'the'] },
+        { picture: '&#x1F46B;', desc: 'friends', words: ['I', 'see', 'my', 'friend', 'we', 'play', 'two', 'the', 'are', 'friends'] },
+        { picture: '&#x1F3C3;', desc: 'running', words: ['I', 'can', 'run', 'fast', 'we', 'like', 'to', 'go', 'she', 'is'] },
+        { picture: '&#x1F37D;&#xFE0F;&#x1F60B;', desc: 'eating', words: ['I', 'like', 'to', 'eat', 'we', 'food', 'the', 'good', 'can', 'am'] },
+        { picture: '&#x1F415;&#x1F3BE;', desc: 'dog playing', words: ['the', 'dog', 'can', 'play', 'I', 'see', 'a', 'my', 'is', 'big'] },
+        { picture: '&#x2600;&#xFE0F;&#x1F308;', desc: 'sunshine', words: ['the', 'sun', 'is', 'big', 'I', 'see', 'a', 'yellow', 'can', 'up'] },
+        { picture: '&#x1F467;&#x1F60A;', desc: 'happy girl', words: ['I', 'am', 'happy', 'she', 'is', 'the', 'girl', 'can', 'we', 'are'] },
+        { picture: '&#x1F431;', desc: 'cat', words: ['the', 'cat', 'is', 'little', 'I', 'like', 'my', 'a', 'can', 'sit'] },
+        { picture: '&#x1F3A8;', desc: 'painting', words: ['I', 'like', 'to', 'paint', 'we', 'can', 'a', 'picture', 'the', 'make'] },
+        { picture: '&#x1F3B5;', desc: 'singing', words: ['I', 'can', 'sing', 'a', 'song', 'we', 'like', 'to', 'the', 'is'] },
+        { picture: '&#x1F6B2;', desc: 'bike riding', words: ['I', 'ride', 'my', 'bike', 'can', 'the', 'go', 'fast', 'is', 'red'] },
+        { picture: '&#x1F3CA;', desc: 'swimming', words: ['I', 'can', 'swim', 'we', 'like', 'to', 'the', 'in', 'water', 'go'] },
+        { picture: '&#x1F333;', desc: 'tree', words: ['the', 'tree', 'is', 'big', 'I', 'see', 'a', 'green', 'tall', 'can'] },
+        { picture: '&#x1F382;', desc: 'birthday', words: ['I', 'like', 'cake', 'the', 'is', 'a', 'good', 'we', 'eat', 'yum'] },
+        { picture: '&#x1F9F8;', desc: 'teddy bear', words: ['I', 'love', 'my', 'bear', 'the', 'is', 'soft', 'a', 'big', 'hug'] },
+        { picture: '&#x1F30D;', desc: 'outside', words: ['I', 'go', 'out', 'we', 'play', 'can', 'the', 'like', 'to', 'fun'] },
+        { picture: '&#x1F3E0;', desc: 'home', words: ['I', 'go', 'home', 'my', 'is', 'the', 'like', 'we', 'in', 'a'] },
+        { picture: '&#x1F4A4;', desc: 'sleeping', words: ['I', 'go', 'to', 'bed', 'am', 'the', 'can', 'sleep', 'we', 'like'] },
+        { picture: '&#x1F40E;', desc: 'horse', words: ['the', 'horse', 'can', 'run', 'I', 'see', 'a', 'big', 'is', 'fast'] },
+        { picture: '&#x1F304;', desc: 'morning', words: ['I', 'get', 'up', 'the', 'sun', 'is', 'we', 'can', 'see', 'good'] },
+      ];
+
+      let rounds = CarnivalUtils.shuffleArray(scenarios).slice(0, gameLength);
+      let currentIdx = 0;
+      let sessionCorrect = 0;
+      let sentenceWords = [];
+
+      const game = document.getElementById('game');
+      const gameArea = document.getElementById('game-area');
+      const endArea = document.getElementById('end-area');
+      const sentenceArea = document.getElementById('sentence-area');
+      const wordBank = document.getElementById('word-bank');
+      const submitArea = document.getElementById('submit-area');
+
+      GamepadManager.registerFocusGroup([document.getElementById('start-btn')], { id: 'intro' });
+      document.getElementById('start-btn').addEventListener('click', () => {
+        AudioManager.resume();
+        document.getElementById('intro').classList.add('hidden');
+        gameArea.classList.remove('hidden');
+        showRound();
+      });
+
+      function showRound() {
+        if (currentIdx >= rounds.length) return showEnd();
+        const r = rounds[currentIdx];
+        sentenceWords = [];
+
+        document.getElementById('counter').textContent = `Sentence ${currentIdx + 1} of ${rounds.length}`;
+        document.getElementById('progress-fill').style.width = `${(currentIdx / rounds.length) * 100}%`;
+        document.getElementById('picture').innerHTML = r.picture;
+
+        renderSentence();
+        renderBank(r.words);
+        submitArea.innerHTML = '';
+      }
+
+      function renderSentence() {
+        if (sentenceWords.length === 0) {
+          sentenceArea.innerHTML = '<span style="color:#ccc;font-style:italic;">Your sentence will appear here...</span>';
+        } else {
+          sentenceArea.innerHTML = sentenceWords.map(w => `<span class="sentence-word">${w}</span>`).join('');
+        }
+        // Show/hide submit button
+        if (sentenceWords.length >= 3) {
+          submitArea.innerHTML = '<button class="btn btn-yellow" id="submit-btn">Submit Sentence!</button>';
+          document.getElementById('submit-btn').addEventListener('click', submitSentence);
+        } else {
+          submitArea.innerHTML = '';
+        }
+      }
+
+      function renderBank(words) {
+        wordBank.innerHTML = '';
+        words.forEach(w => {
+          const tile = document.createElement('button');
+          tile.className = 'word-tile';
+          tile.textContent = w;
+          tile.dataset.word = w;
+          if (sentenceWords.includes(w)) tile.classList.add('used');
+          tile.addEventListener('click', () => addWord(w, tile));
+          wordBank.appendChild(tile);
+        });
+
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(wordBank.querySelectorAll('.word-tile'), { id: 'bank', columns: 5 });
+      }
+
+      function addWord(word, tile) {
+        AudioManager.play('buttonPress');
+        sentenceWords.push(word);
+        tile.classList.add('used');
+        renderSentence();
+      }
+
+      function submitSentence() {
+        AudioManager.play('buttonPress');
+        // Show parent verification
+        submitArea.innerHTML = `
+          <p style="font-size:20px;margin:10px 0;">Does this sentence make sense?</p>
+          <div style="display:flex;gap:16px;justify-content:center;">
+            <button class="btn btn-green" id="approve-btn">Makes Sense!</button>
+            <button class="btn btn-red" id="reject-btn">Try Again</button>
+          </div>
+        `;
+        GamepadManager.clearFocusGroups();
+        GamepadManager.registerFocusGroup(submitArea.querySelectorAll('.btn'), { id: 'verify' });
+
+        document.getElementById('approve-btn').addEventListener('click', () => {
+          sessionCorrect++;
+          const result = RewardSystem.addStar();
+          AudioManager.play('correct');
+          RewardSystem.animateStarEarned(game);
+          CarnivalUtils.showEncouragement(game, 'Great sentence, Cali!');
+          if (result.mmEarned) setTimeout(() => RewardSystem.animateMMEarned(game), 600);
+          setTimeout(() => { currentIdx++; showRound(); }, 1500);
+        });
+
+        document.getElementById('reject-btn').addEventListener('click', () => {
+          AudioManager.play('incorrect');
+          sentenceWords = [];
+          renderSentence();
+          renderBank(rounds[currentIdx].words);
+          submitArea.innerHTML = '';
+        });
+      }
+
+      // Undo with B
+      GamepadManager.on('b_press', () => {
+        if (sentenceWords.length > 0) {
+          const removed = sentenceWords.pop();
+          renderSentence();
+          // Un-use the tile
+          const tiles = wordBank.querySelectorAll('.word-tile');
+          for (let i = tiles.length - 1; i >= 0; i--) {
+            if (tiles[i].dataset.word === removed && tiles[i].classList.contains('used')) {
+              tiles[i].classList.remove('used');
+              break;
+            }
+          }
+          AudioManager.play('buttonPress');
+        }
+      });
+
+      // Submit with Y
+      GamepadManager.on('y_press', () => {
+        if (sentenceWords.length >= 3) {
+          const btn = document.getElementById('submit-btn');
+          if (btn) btn.click();
+        }
+      });
+
+      function showEnd() {
+        gameArea.classList.add('hidden');
+        endArea.classList.remove('hidden');
+        const summary = RewardSystem.getSessionSummary();
+        CarnivalUtils.showEndScreen(endArea, {
+          stars: summary.stars,
+          mms: summary.mms,
+          wordsCorrect: sessionCorrect,
+          totalQuestions: rounds.length
+        });
+      }
+
+      // Exit, Skip, Settings
+      function skipCurrent() { currentIdx++; sentenceWords = []; showRound(); }
+      document.getElementById('exit-btn').addEventListener('click', () => location.href = '../index.html');
+      document.getElementById('skip-nav-btn').addEventListener('click', skipCurrent);
+      document.getElementById('settings-nav-btn').addEventListener('click', () => location.href = '../index.html');
+      GamepadManager.on('exit_game', () => location.href = '../index.html');
+      GamepadManager.on('skip_question', skipCurrent);
+
+      document.addEventListener('click', () => AudioManager.resume(), { once: true });
+    });
+  </script>
+</body>
+</html>
