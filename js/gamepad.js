@@ -19,6 +19,7 @@ const GamepadManager = {
     if (this._active) return;
     this._active = true;
     this._setupKeyboard();
+    this._suppressBrowserGamepad();
     this._poll();
   },
 
@@ -200,6 +201,25 @@ const GamepadManager = {
     if (actions.x) html += `<span class="guide-btn"><span class="xbox-x">X</span> ${actions.x}</span>`;
     if (actions.y) html += `<span class="guide-btn"><span class="xbox-y">Y</span> ${actions.y}</span>`;
     guide.innerHTML = html;
+  },
+
+  /** Suppress Xbox browser's native gamepad-to-mouse behavior */
+  _suppressBrowserGamepad() {
+    // Xbox Edge maps A button to context menu / long-press — block it
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
+
+    // Xbox Edge fires pointer/click events from A button — block these
+    // when a gamepad is connected so our Gamepad API poll handler takes over
+    const blockIfGamepad = (e) => {
+      if (e.pointerType === 'gamepad' || e.pointerType === '') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('pointerdown', blockIfGamepad, true);
+    document.addEventListener('pointerup', blockIfGamepad, true);
   },
 
   /** Setup keyboard fallback */
