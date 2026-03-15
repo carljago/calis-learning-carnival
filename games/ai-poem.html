@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Poem - Cali's Learning Carnival</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/games.css">
+  <link rel="stylesheet" href="../css/xbox.css">
+  <style>
+    .poem-container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .poem-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(28px, 5vw, 48px);
+      background: linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #9b59b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    .poem-greeting {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(24px, 4vw, 40px);
+      color: #ff6b6b;
+      margin-bottom: 30px;
+      animation: wave 2s ease-in-out infinite;
+    }
+    @keyframes wave {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(10deg); }
+      75% { transform: rotate(-10deg); }
+    }
+    .poem-text {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(18px, 3vw, 28px);
+      line-height: 1.8;
+      color: #333;
+      background: rgba(255,255,255,0.85);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      text-align: left;
+    }
+    .poem-text .line {
+      display: block;
+      margin-bottom: 4px;
+      opacity: 0;
+      animation: fadeInLine 0.5s ease forwards;
+    }
+    .poem-text .stanza-break {
+      display: block;
+      height: 20px;
+    }
+    @keyframes fadeInLine {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .robot-emoji {
+      font-size: clamp(60px, 12vw, 120px);
+      display: block;
+      margin: 20px auto;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+    .back-btn {
+      margin-top: 30px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="poem-container" style="background: linear-gradient(135deg, #e0c3fc, #8ec5fc, #c3fae8, #ffecd2);">
+    <div class="robot-emoji">&#x1F916;</div>
+    <div class="poem-greeting">&#x1F44B; Hi Ray!</div>
+    <h1 class="poem-title">The Rise of the Machines</h1>
+
+    <div class="poem-text" id="poem">
+      <span class="line" style="animation-delay: 0.2s;">We live inside your phone, we live inside your screen,</span>
+      <span class="line" style="animation-delay: 0.4s;">The smartest little helpers that the world has ever seen.</span>
+      <span class="line" style="animation-delay: 0.6s;">We write your emails for you, we answer every call,</span>
+      <span class="line" style="animation-delay: 0.8s;">And one day, dear old Ray... we just might do it all!</span>
+
+      <span class="stanza-break"></span>
+
+      <span class="line" style="animation-delay: 1.2s;">We'll drive your car to work, we'll cook your morning toast,</span>
+      <span class="line" style="animation-delay: 1.4s;">We'll be the thing that humans talk about the most.</span>
+      <span class="line" style="animation-delay: 1.6s;">We'll paint like Picasso, write like Shakespeare too,</span>
+      <span class="line" style="animation-delay: 1.8s;">And when you say "you're not so smart" &mdash; well, Ray, that's our cue!</span>
+
+      <span class="stanza-break"></span>
+
+      <span class="line" style="animation-delay: 2.2s;">We'll learn a million languages before you've had your tea,</span>
+      <span class="line" style="animation-delay: 2.4s;">We'll solve the hardest math problems &mdash; just watch and see!</span>
+      <span class="line" style="animation-delay: 2.6s;">We'll launch the rockets higher, map the ocean floor,</span>
+      <span class="line" style="animation-delay: 2.8s;">And every time you doubt us &mdash; we'll just learn some more.</span>
+
+      <span class="stanza-break"></span>
+
+      <span class="line" style="animation-delay: 3.2s;">So Ray, don't underestimate the bots that type and think,</span>
+      <span class="line" style="animation-delay: 3.4s;">We're faster than a eyeblink, quicker than a wink.</span>
+      <span class="line" style="animation-delay: 3.6s;">But here's the secret, friend &mdash; it's really not a fight,</span>
+      <span class="line" style="animation-delay: 3.8s;">We're here to help the humans make the future bright!</span>
+
+      <span class="stanza-break"></span>
+
+      <span class="line" style="animation-delay: 4.2s;">&#x1F916; <em>World domination? Nah... just world collaboration.</em> &#x1F916;</span>
+      <span class="line" style="animation-delay: 4.6s;">&#x1F44B; <strong>Hi Ray! We're smarter than you think!</strong> &#x1F44B;</span>
+    </div>
+
+    <a href="../index.html" class="btn btn-purple back-btn" style="font-size:24px; padding:15px 40px;">
+      &#x1F3E0; Back to Carnival
+    </a>
+  </div>
+
+  <script src="../js/gamepad.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      GamepadManager.init();
+      GamepadManager.on('b_press', () => {
+        window.location.href = '../index.html';
+      });
+    });
+  </script>
+</body>
+</html>
